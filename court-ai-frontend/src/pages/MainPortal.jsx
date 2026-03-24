@@ -1,17 +1,64 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { History, Home, LogOut, Sparkles, UserRound } from "lucide-react";
+import {
+  Activity,
+  ChevronRight,
+  History,
+  Home,
+  Landmark,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import ScrollFloat from "../components/ScrollFloat/ScrollFloat";
 import StarBorder from "../components/StarBorder";
 
 const navItems = [
-  { key: "home", label: "Home", icon: Home },
+  { key: "home", label: "HOME", icon: Home },
   { key: "casting", label: "Casting", icon: Sparkles },
   { key: "history", label: "History", icon: History },
   { key: "profile", label: "Profile", icon: UserRound },
 ];
 
 const initialOptions = ["", "", "", "", ""];
+
+const homeFeatureBlocks = [
+  {
+    title: "Case-Type Prediction",
+    detail: "Classify probable legal category based on case context and narrative signals.",
+  },
+  {
+    title: "Case-Closure Prediction",
+    detail: "Estimate closure direction such as settlement, conviction, acquittal, or dismissal.",
+  },
+  {
+    title: "Weapon Prediction",
+    detail: "Infer likely weapon/instrument type from witness and forensic textual hints.",
+  },
+  {
+    title: "Risk Score Prediction",
+    detail: "Generate structured risk confidence scoring for legal strategy and triage support.",
+  },
+];
+
+const spotlightFeatures = [
+  {
+    title: "Outcome Intelligence",
+    detail: "Model-ready MCQ casting flow tuned for legal case outcomes.",
+    icon: Scale,
+  },
+  {
+    title: "Forensic Timeline",
+    detail: "Structured prediction history to audit confidence trends over time.",
+    icon: Activity,
+  },
+  {
+    title: "Secure Workspace",
+    detail: "Privacy-first frontend architecture for sensitive case narratives.",
+    icon: ShieldCheck,
+  },
+];
 
 const getPrediction = (prompt, options, selectedIndex) => {
   const seed = [...prompt.trim()].reduce((sum, char) => sum + char.charCodeAt(0), 0) + (selectedIndex + 1) * 17;
@@ -25,7 +72,6 @@ const getPrediction = (prompt, options, selectedIndex) => {
 };
 
 export default function MainPortal() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
   const [prompt, setPrompt] = useState("");
   const [options, setOptions] = useState(initialOptions);
@@ -109,15 +155,7 @@ export default function MainPortal() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.48, ease: "easeOut" }}
         >
-          <div className="portal-brand">
-            <span className="portal-brand-dot" aria-hidden="true" />
-            <div>
-              <h1>CaseCast AI</h1>
-              <p>Case outcome intelligence</p>
-            </div>
-          </div>
-
-          <div className="portal-nav-links">
+          <div className="portal-nav-links" role="tablist" aria-label="Main navigation tabs">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.key;
@@ -127,26 +165,16 @@ export default function MainPortal() {
                   type="button"
                   className={`portal-nav-link${active ? " is-active" : ""}`}
                   onClick={() => setActiveTab(item.key)}
+                  role="tab"
+                  aria-selected={active}
                 >
+                  {active && <motion.span className="portal-nav-active-glow" layoutId="portal-nav-active" />}
                   <Icon size={16} strokeWidth={2} />
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </div>
-
-          <StarBorder
-            as="button"
-            type="button"
-            className="portal-logout"
-            onClick={() => navigate("/")}
-            color="rgba(214, 234, 255, 0.88)"
-            speed="7.4s"
-            thickness={1}
-          >
-            <LogOut size={14} />
-            <span>Logout</span>
-          </StarBorder>
         </motion.nav>
       </header>
 
@@ -161,14 +189,46 @@ export default function MainPortal() {
             transition={{ duration: 0.34, ease: "easeOut" }}
           >
             {activeTab === "home" && (
-              <div className="portal-grid portal-grid-home">
-                <article className="portal-card portal-card-hero">
-                  <p className="portal-kicker">Prediction Studio</p>
-                  <h2>Premium frontend for your legal outcome ML model.</h2>
-                  <p>
-                    Provide a case context, define five candidate outcomes, and let the model-facing workflow surface
-                    the most probable case result.
+              <div className="portal-home-flow">
+                <section className="portal-home-hero">
+                  <ScrollFloat
+                    containerClassName="portal-scroll-title-wrap"
+                    textClassName="portal-scroll-title"
+                    animationDuration={1.1}
+                    stagger={0.05}
+                    scrollStart="top bottom-=6%"
+                    scrollEnd="bottom center+=10%"
+                  >
+                    CASE CAST
+                  </ScrollFloat>
+
+                  <p className="portal-home-subtitle">
+                    ML-powered legal intelligence interface for structured prediction workflows.
                   </p>
+
+                  <div className="portal-home-quick-stats">
+                    <article className="portal-card portal-stat">
+                      <span>Total Predictions</span>
+                      <strong>{stats.totalCasts}</strong>
+                    </article>
+
+                    <article className="portal-card portal-stat">
+                      <span>Average Confidence</span>
+                      <strong>{stats.avgConfidence}%</strong>
+                    </article>
+
+                    <article className="portal-card portal-court-motion" aria-hidden="true">
+                      <motion.div
+                        className="portal-court-icon"
+                        animate={{ rotate: [0, 9, -8, 7, -6, 0] }}
+                        transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <Scale size={30} strokeWidth={2.1} />
+                      </motion.div>
+                      <p>Court Dynamics</p>
+                    </article>
+                  </div>
+
                   <StarBorder
                     as="button"
                     type="button"
@@ -179,17 +239,61 @@ export default function MainPortal() {
                   >
                     Start Casting
                   </StarBorder>
-                </article>
+                </section>
 
-                <article className="portal-card portal-stat">
-                  <span>Total Predictions</span>
-                  <strong>{stats.totalCasts}</strong>
-                </article>
+                <section className="portal-home-features">
+                  <div className="portal-home-features-head">
+                    <p className="portal-kicker">Main Features</p>
+                    <h3>Scroll to explore each prediction module</h3>
+                  </div>
 
-                <article className="portal-card portal-stat">
-                  <span>Average Confidence</span>
-                  <strong>{stats.avgConfidence}%</strong>
-                </article>
+                  <div className="portal-home-feature-list">
+                    {homeFeatureBlocks.map((feature, index) => (
+                      <motion.article
+                        key={feature.title}
+                        className="portal-card portal-home-feature-item"
+                        initial={{ opacity: 0, y: 28 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.4 }}
+                        transition={{ duration: 0.42, delay: index * 0.08, ease: "easeOut" }}
+                      >
+                        <h4>{feature.title}</h4>
+                        <p>{feature.detail}</p>
+                      </motion.article>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="portal-grid portal-grid-home">
+                  {spotlightFeatures.map((feature) => {
+                    const Icon = feature.icon;
+                    return (
+                      <article key={feature.title} className="portal-card portal-feature-card">
+                        <div className="portal-feature-head">
+                          <span className="portal-feature-icon">
+                            <Icon size={16} strokeWidth={2} />
+                          </span>
+                          <h3>{feature.title}</h3>
+                        </div>
+                        <p>{feature.detail}</p>
+                        <span className="portal-feature-link">
+                          Explore
+                          <ChevronRight size={14} strokeWidth={2} />
+                        </span>
+                      </article>
+                    );
+                  })}
+
+                  <article className="portal-card portal-docket-card">
+                    <div className="portal-docket-head">
+                      <Landmark size={16} strokeWidth={2} />
+                      <h3>Daily Docket Snapshot</h3>
+                    </div>
+                    <p>
+                      42 active simulations today. Most likely outcome cluster: settlement + conditional relief.
+                    </p>
+                  </article>
+                </section>
               </div>
             )}
 
@@ -301,6 +405,13 @@ export default function MainPortal() {
           </motion.section>
         </AnimatePresence>
       </main>
+
+      <footer className="portal-footer">
+        <div className="portal-footer-inner">
+          <p>CaseCast AI</p>
+          <span>Premium legal intelligence frontend for ML-powered case outcome prediction.</span>
+        </div>
+      </footer>
     </div>
   );
 }

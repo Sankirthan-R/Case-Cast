@@ -36,6 +36,7 @@ export default function FrostedLoginForm({
 }) {
   const [view, setView] = useState("login");
   const [direction, setDirection] = useState(1);
+  const [isMergingToApp, setIsMergingToApp] = useState(false);
 
   const switchView = (nextView) => {
     const order = { login: 0, signup: 1, forgot: 2 };
@@ -68,7 +69,14 @@ export default function FrostedLoginForm({
     event.preventDefault();
 
     if (view === "login") {
-      onLogin?.();
+      if (isMergingToApp) {
+        return;
+      }
+
+      setIsMergingToApp(true);
+      window.setTimeout(() => {
+        onLogin?.();
+      }, 640);
       return;
     }
 
@@ -81,11 +89,13 @@ export default function FrostedLoginForm({
   };
 
   return (
-    <div className="frosted-login-content">
+    <div className={`frosted-login-content${isMergingToApp ? " is-merging" : ""}`}>
       <div className="frosted-login-head">
         <p>{heading.subtitle}</p>
         <h2>{heading.title}</h2>
-        <span className="frosted-head-helper">Secure access to your legal intelligence workspace</span>
+        {!isMergingToApp && (
+          <span className="frosted-head-helper">Secure access to your legal intelligence workspace</span>
+        )}
       </div>
 
       <form className="frosted-form" onSubmit={handleSubmit}>
@@ -103,21 +113,36 @@ export default function FrostedLoginForm({
               <>
                 <label className="frosted-field">
                   <span>Email ID</span>
-                  <input type="email" placeholder="you@example.com" autoComplete="email" />
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    autoComplete="email"
+                    disabled={isMergingToApp}
+                  />
                 </label>
 
                 <label className="frosted-field">
                   <span>Password</span>
-                  <input type="password" placeholder="Enter your password" autoComplete="current-password" />
+                  <input
+                    type="password"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    disabled={isMergingToApp}
+                  />
                 </label>
 
                 <div className="frosted-meta-row">
                   <label className="remember-wrap">
-                    <input type="checkbox" />
+                    <input type="checkbox" disabled={isMergingToApp} />
                     <span>Remember me</span>
                   </label>
 
-                  <button type="button" className="frosted-link" onClick={() => switchView("forgot")}>
+                  <button
+                    type="button"
+                    className="frosted-link"
+                    onClick={() => switchView("forgot")}
+                    disabled={isMergingToApp}
+                  >
                     <StarBorder
                       as="span"
                       className="frosted-link-star"
@@ -133,34 +158,38 @@ export default function FrostedLoginForm({
                 <StarBorder
                   as="button"
                   type="submit"
-                  className="frosted-login-btn"
+                  className={`frosted-login-btn${isMergingToApp ? " is-launching" : ""}`}
                   color="rgba(184, 214, 255, 0.9)"
                   speed="6.2s"
+                  disabled={isMergingToApp}
                 >
-                  Login
+                  {isMergingToApp ? "Launching..." : "Log In"}
                 </StarBorder>
 
-                <div className="frosted-divider" aria-hidden="true">
-                  <span>or continue with</span>
-                </div>
-
-                <StarBorder
-                  as="button"
-                  type="button"
-                  className="frosted-google-btn"
-                  onClick={onGoogleAuth}
-                  color="rgba(220, 235, 255, 0.78)"
-                  speed="7.4s"
-                >
-                  <span className="google-auth-content">
-                    <GoogleLogo />
-                    <span>Continue with Google</span>
-                  </span>
-                </StarBorder>
+                {!isMergingToApp && (
+                  <StarBorder
+                    as="button"
+                    type="button"
+                    className="frosted-google-btn"
+                    onClick={onGoogleAuth}
+                    color="rgba(220, 235, 255, 0.78)"
+                    speed="7.4s"
+                  >
+                    <span className="google-auth-content">
+                      <GoogleLogo />
+                      <span>Continue with Google</span>
+                    </span>
+                  </StarBorder>
+                )}
 
                 <p className="frosted-register-row">
                   Don&apos;t have an account?
-                  <button type="button" className="frosted-link" onClick={() => switchView("signup")}>
+                  <button
+                    type="button"
+                    className="frosted-link"
+                    onClick={() => switchView("signup")}
+                    disabled={isMergingToApp}
+                  >
                     <StarBorder
                       as="span"
                       className="frosted-link-star"
