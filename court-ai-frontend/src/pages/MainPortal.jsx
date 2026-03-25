@@ -11,6 +11,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import BorderGlow from "../components/BorderGlow/BorderGlow";
+import ClickSpark from "../components/ClickSpark";
 import ScrollFloat from "../components/ScrollFloat/ScrollFloat";
 import StarBorder from "../components/StarBorder";
 
@@ -21,7 +23,12 @@ const navItems = [
   { key: "profile", label: "Profile", icon: UserRound },
 ];
 
-const initialOptions = ["", "", "", "", ""];
+const initialCastingInputs = {
+  age: "",
+  gender: "",
+  city: "",
+  hour: "",
+};
 
 const homeFeatureBlocks = [
   {
@@ -60,22 +67,25 @@ const spotlightFeatures = [
   },
 ];
 
-const getPrediction = (prompt, options, selectedIndex) => {
-  const seed = [...prompt.trim()].reduce((sum, char) => sum + char.charCodeAt(0), 0) + (selectedIndex + 1) * 17;
-  const predictionIndex = Math.abs(seed) % options.length;
-  const confidence = 72 + (seed % 24);
+const predictedClasses = ["High Risk", "Moderate Risk", "Low Risk", "Watchlist"];
+
+const getPrediction = ({ age, gender, city, hour }) => {
+  const seed =
+    Number(age || 0) * 11 +
+    Number(hour || 0) * 19 +
+    [...`${gender}${city}`].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const predictionIndex = Math.abs(seed) % predictedClasses.length;
+  const confidence = 74 + (seed % 22);
 
   return {
-    outcome: options[predictionIndex],
+    outcome: predictedClasses[predictionIndex],
     confidence: Math.min(96, Math.max(68, confidence)),
   };
 };
 
 export default function MainPortal() {
   const [activeTab, setActiveTab] = useState("home");
-  const [prompt, setPrompt] = useState("");
-  const [options, setOptions] = useState(initialOptions);
-  const [selectedOption, setSelectedOption] = useState(0);
+  const [castingInputs, setCastingInputs] = useState(initialCastingInputs);
   const [result, setResult] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
 
@@ -111,24 +121,29 @@ export default function MainPortal() {
     };
   }, [historyItems]);
 
-  const updateOption = (index, value) => {
-    setOptions((prev) => prev.map((entry, i) => (i === index ? value : entry)));
+  const updateCastingInput = (key, value) => {
+    setCastingInputs((prev) => ({ ...prev, [key]: value }));
   };
 
   const handlePredict = (event) => {
     event.preventDefault();
 
-    const sanitizedOptions = options.map((entry) => entry.trim());
-    if (!prompt.trim() || sanitizedOptions.some((entry) => !entry)) {
+    if (
+      !castingInputs.age.trim() ||
+      !castingInputs.gender.trim() ||
+      !castingInputs.city.trim() ||
+      !castingInputs.hour.trim()
+    ) {
       return;
     }
 
-    const prediction = getPrediction(prompt, sanitizedOptions, selectedOption);
+    const prediction = getPrediction(castingInputs);
     const entry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      prompt: prompt.trim(),
-      options: sanitizedOptions,
-      selectedOption: sanitizedOptions[selectedOption],
+      age: castingInputs.age.trim(),
+      gender: castingInputs.gender.trim(),
+      city: castingInputs.city.trim(),
+      hour: castingInputs.hour.trim(),
       outcome: prediction.outcome,
       confidence: prediction.confidence,
       createdAt: new Date().toISOString(),
@@ -140,9 +155,7 @@ export default function MainPortal() {
   };
 
   const clearCasting = () => {
-    setPrompt("");
-    setOptions(initialOptions);
-    setSelectedOption(0);
+    setCastingInputs(initialCastingInputs);
     setResult(null);
   };
 
@@ -298,60 +311,105 @@ export default function MainPortal() {
             )}
 
             {activeTab === "casting" && (
-              <form className="portal-cast-form" onSubmit={handlePredict}>
-                <label className="portal-field">
-                  <span>Case Summary</span>
-                  <textarea
-                    value={prompt}
-                    onChange={(event) => setPrompt(event.target.value)}
-                    placeholder="Paste the case brief, key facts, and legal context here..."
-                    rows={6}
-                  />
-                </label>
+              <ClickSpark
+                sparkColor="rgba(132, 201, 255, 0.95)"
+                sparkSize={9}
+                sparkRadius={22}
+                sparkCount={9}
+                duration={460}
+                easing="ease-out"
+                className="portal-casting-spark"
+              >
+                <BorderGlow
+                  className="portal-casting-glow"
+                  glowColor="205 92% 84%"
+                  borderRadius={24}
+                  glowRadius={44}
+                  glowIntensity={0.92}
+                  edgeSensitivity={20}
+                  colors={["#8d15ff", "#35b5ff", "#88d3ff"]}
+                  backgroundColor="rgba(7, 16, 31, 0.65)"
+                >
+                  <form className="portal-cast-form" onSubmit={handlePredict}>
+                    <div className="portal-cast-header">
+                      <p className="portal-kicker">Casting Inputs</p>
+                      <h3>Provide model features for prediction</h3>
+                    </div>
 
-                <div className="portal-options-wrap">
-                  <p>Outcome Options (MCQ)</p>
-                  {options.map((value, index) => (
-                    <label key={`option-${index}`} className="portal-option-field">
-                      <input
-                        type="radio"
-                        name="selected-outcome"
-                        checked={selectedOption === index}
-                        onChange={() => setSelectedOption(index)}
-                      />
-                      <input
-                        type="text"
-                        value={value}
-                        placeholder={`Option ${index + 1}`}
-                        onChange={(event) => updateOption(index, event.target.value)}
-                      />
-                    </label>
-                  ))}
-                </div>
+                    <div className="portal-cast-grid">
+                      <label className="portal-field portal-mini-field">
+                        <span>Age</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={castingInputs.age}
+                          onChange={(event) => updateCastingInput("age", event.target.value)}
+                          placeholder="e.g. 34"
+                        />
+                      </label>
 
-                <div className="portal-cast-actions">
-                  <StarBorder
-                    as="button"
-                    type="submit"
-                    className="portal-primary"
-                    color="rgba(206, 230, 255, 0.92)"
-                    speed="6.4s"
-                  >
-                    Predict Outcome
-                  </StarBorder>
-                  <button type="button" className="portal-ghost" onClick={clearCasting}>
-                    Reset
-                  </button>
-                </div>
+                      <label className="portal-field portal-mini-field">
+                        <span>Gender</span>
+                        <select
+                          value={castingInputs.gender}
+                          onChange={(event) => updateCastingInput("gender", event.target.value)}
+                        >
+                          <option value="">Select gender</option>
+                          <option value="Female">Female</option>
+                          <option value="Male">Male</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </label>
 
-                {result && (
-                  <article className="portal-result">
-                    <span>Predicted Outcome</span>
-                    <h3>{result.outcome}</h3>
-                    <p>Confidence score: {result.confidence}%</p>
-                  </article>
-                )}
-              </form>
+                      <label className="portal-field portal-mini-field">
+                        <span>City</span>
+                        <input
+                          type="text"
+                          value={castingInputs.city}
+                          onChange={(event) => updateCastingInput("city", event.target.value)}
+                          placeholder="e.g. Bengaluru"
+                        />
+                      </label>
+
+                      <label className="portal-field portal-mini-field">
+                        <span>Hour</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="23"
+                          value={castingInputs.hour}
+                          onChange={(event) => updateCastingInput("hour", event.target.value)}
+                          placeholder="0-23"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="portal-cast-actions">
+                      <StarBorder
+                        as="button"
+                        type="submit"
+                        className="portal-primary"
+                        color="rgba(206, 230, 255, 0.92)"
+                        speed="6.4s"
+                      >
+                        Predict Outcome
+                      </StarBorder>
+                      <button type="button" className="portal-ghost" onClick={clearCasting}>
+                        Reset
+                      </button>
+                    </div>
+
+                    {result && (
+                      <article className="portal-result">
+                        <span>Predicted Outcome</span>
+                        <h3>{result.outcome}</h3>
+                        <p>Confidence score: {result.confidence}%</p>
+                      </article>
+                    )}
+                  </form>
+                </BorderGlow>
+              </ClickSpark>
             )}
 
             {activeTab === "history" && (
@@ -369,9 +427,11 @@ export default function MainPortal() {
                       <h3>{item.outcome}</h3>
                       <span>{new Date(item.createdAt).toLocaleString()}</span>
                     </div>
-                    <p>{item.prompt}</p>
+                    <p>
+                      Age: {item.age} | Gender: {item.gender} | City: {item.city} | Hour: {item.hour}
+                    </p>
                     <div className="portal-history-meta">
-                      <span>Selected: {item.selectedOption}</span>
+                      <span>Feature Input: Structured (4 fields)</span>
                       <span>Confidence: {item.confidence}%</span>
                     </div>
                   </article>
@@ -397,7 +457,7 @@ export default function MainPortal() {
                 <article className="portal-card portal-preference">
                   <h3>Model Context</h3>
                   <p>Domain: Legal outcome classification</p>
-                  <p>Input mode: Narrative + 5-option MCQ</p>
+                  <p>Input mode: Age + Gender + City + Hour</p>
                   <p>History retention: 24 recent predictions</p>
                 </article>
               </div>

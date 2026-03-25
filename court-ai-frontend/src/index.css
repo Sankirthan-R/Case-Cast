@@ -197,7 +197,8 @@ a {
   z-index: 3;
   width: min(1280px, 100%);
   min-height: 100dvh;
-  margin: 0 auto;
+  position: relative;
+  z-index: 12;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -286,7 +287,9 @@ a {
   color: #ffffff;
   font-family: "Manrope", "Geist Mono", sans-serif;
   font-size: 0.94rem;
-  letter-spacing: 0.03em;
+  position: relative;
+  z-index: 12;
+  isolation: isolate;
   text-transform: uppercase;
   padding: 0.74rem 1.28rem;
   display: inline-flex;
@@ -327,7 +330,8 @@ a {
   background: linear-gradient(160deg, rgba(14, 24, 43, 0.74), rgba(28, 45, 76, 0.58));
   border: 1px solid rgba(226, 239, 255, 0.35);
   backdrop-filter: blur(24px) saturate(138%);
-  -webkit-backdrop-filter: blur(24px) saturate(138%);
+  position: relative;
+  z-index: 13;
   box-shadow: 0 28px 66px rgba(2, 8, 20, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   padding: 1.25rem 1.2rem;
   overflow: auto;
@@ -616,7 +620,8 @@ a {
 .star-border__beam {
   position: absolute;
   width: 300%;
-  height: 52%;
+  position: relative;
+  z-index: 13;
   border-radius: 999px;
   opacity: 0.74;
   background: radial-gradient(circle, var(--star-color), transparent 12%);
@@ -1118,6 +1123,64 @@ a {
   gap: 0.95rem;
 }
 
+.portal-casting-spark {
+  width: 100%;
+  height: auto;
+}
+
+.portal-casting-glow {
+  width: 100%;
+}
+
+.portal-casting-glow .border-glow-inner {
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.portal-cast-header {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.portal-cast-header h3 {
+  margin: 0;
+  font-size: clamp(1.12rem, 2.4vw, 1.56rem);
+  font-family: "Bodoni Moda", "Times New Roman", serif;
+}
+
+.portal-cast-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.82rem;
+}
+
+.portal-mini-field input,
+.portal-mini-field select {
+  width: 100%;
+  border: 1px solid rgba(222, 237, 255, 0.34);
+  border-radius: 14px;
+  padding: 0.76rem 0.86rem;
+  background: rgba(9, 18, 36, 0.68);
+  color: #ffffff;
+  font-family: "Manrope", "Geist Mono", sans-serif;
+  font-size: 0.92rem;
+}
+
+.portal-mini-field select option {
+  background: #0f1f3c;
+  color: #ffffff;
+}
+
+.portal-mini-field input::placeholder {
+  color: rgba(221, 236, 255, 0.75);
+}
+
+.portal-mini-field input:focus,
+.portal-mini-field select:focus {
+  outline: 2px solid rgba(117, 160, 255, 0.38);
+  border-color: rgba(137, 180, 255, 0.56);
+}
+
 .portal-field {
   display: grid;
   gap: 0.42rem;
@@ -1152,6 +1215,8 @@ a {
 .portal-options-wrap {
   display: grid;
   gap: 0.55rem;
+  position: relative;
+  z-index: 14;
 }
 
 .portal-option-field {
@@ -1186,6 +1251,8 @@ a {
   border-radius: 20px;
   padding: 0.92rem;
   background: linear-gradient(140deg, rgba(220, 235, 255, 0.13), rgba(119, 157, 225, 0.2));
+  position: relative;
+  z-index: 14;
 }
 
 .portal-result span {
@@ -1424,6 +1491,10 @@ a {
     align-items: stretch;
   }
 
+  .portal-cast-grid {
+    grid-template-columns: 1fr;
+  }
+
   .portal-footer {
     margin-top: 0.72rem;
     border-radius: 16px;
@@ -1433,21 +1504,24 @@ a {
 
 /* MainPortal readability overrides */
 .portal-panel {
-  color: rgba(255, 255, 255, 0.98);
+  color: #ffffff;
+  opacity: 1;
 }
 
 .portal-panel h2,
 .portal-panel h3,
 .portal-panel h4,
 .portal-panel strong {
-  color: #ffffff;
+  color: #ffffff !important;
+  opacity: 1;
 }
 
 .portal-panel p,
 .portal-panel span,
 .portal-panel label,
 .portal-panel li {
-  color: rgba(255, 255, 255, 0.95);
+  color: #ffffff !important;
+  opacity: 1;
 }
 
 .portal-home-subtitle,
@@ -1467,7 +1541,25 @@ a {
 .portal-history-meta span,
 .portal-court-motion p,
 .portal-feature-link {
-  color: rgba(255, 255, 255, 0.95);
+  color: #ffffff !important;
+  opacity: 1;
+}
+
+.portal-nav-link,
+.portal-nav-link span,
+.portal-nav-link svg,
+.portal-result p,
+.portal-ghost,
+.portal-mini-field input,
+.portal-mini-field select,
+.portal-mini-field input::placeholder,
+.portal-home-features-head h3,
+.portal-home-feature-item h4,
+.portal-docket-card h3,
+.portal-feature-card h3,
+.portal-cast-header h3 {
+  color: #ffffff !important;
+  opacity: 1;
 }
 
 .portal-footer-inner {
@@ -1488,11 +1580,13 @@ a {
 }
 
 .portal-footer p {
-  color: #ffffff;
+  color: #ffffff !important;
+  opacity: 1;
 }
 
 .portal-footer span {
-  color: rgba(255, 255, 255, 0.92);
+  color: #ffffff !important;
+  opacity: 1;
 }
 
 @media (max-width: 640px) {
