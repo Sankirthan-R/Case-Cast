@@ -408,8 +408,15 @@ export default function MainPortal() {
 
       <footer className="portal-footer">
         <div className="portal-footer-inner">
-          <p>CaseCast AI</p>
-          <span>Premium legal intelligence frontend for ML-powered case outcome prediction.</span>
+          <div className="portal-footer-brand">
+            <p>CaseCast AI</p>
+            <span>Premium legal intelligence frontend for ML-powered case outcome prediction.</span>
+          </div>
+          <div className="portal-footer-meta">
+            <span>Copyright © 2026 CaseCast Technologies. All rights reserved.</span>
+            <span>Contact: support@casecast.ai | +1 (555) 010-2048</span>
+            <span>Address: 221B Justice Avenue, Suite 402, New York, NY 10001</span>
+          </div>
         </div>
       </footer>
     </div>

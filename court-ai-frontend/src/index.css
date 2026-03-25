@@ -4,12 +4,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 :root {
   --bg-soft: #f2f2f2;
@@ -1431,6 +1428,80 @@ a {
     margin-top: 0.72rem;
     border-radius: 16px;
     padding: 0.7rem 0.75rem;
+  }
+}
+
+/* MainPortal readability overrides */
+.portal-panel {
+  color: rgba(255, 255, 255, 0.98);
+}
+
+.portal-panel h2,
+.portal-panel h3,
+.portal-panel h4,
+.portal-panel strong {
+  color: #ffffff;
+}
+
+.portal-panel p,
+.portal-panel span,
+.portal-panel label,
+.portal-panel li {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.portal-home-subtitle,
+.portal-home-feature-item p,
+.portal-card-hero p,
+.portal-profile-main p,
+.portal-preference p,
+.portal-history-item p,
+.portal-feature-card p,
+.portal-docket-card p,
+.portal-kicker,
+.portal-result span,
+.portal-stat span,
+.portal-field span,
+.portal-options-wrap p,
+.portal-history-top span,
+.portal-history-meta span,
+.portal-court-motion p,
+.portal-feature-link {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.portal-footer-inner {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 0.55rem;
+}
+
+.portal-footer-brand {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.portal-footer-meta {
+  display: grid;
+  justify-items: end;
+  gap: 0.16rem;
+}
+
+.portal-footer p {
+  color: #ffffff;
+}
+
+.portal-footer span {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+@media (max-width: 640px) {
+  .portal-footer-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-footer-meta {
+    justify-items: start;
   }
 }
 
