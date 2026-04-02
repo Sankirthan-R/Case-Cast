@@ -33,19 +33,23 @@ const initialCastingInputs = {
 const homeFeatureBlocks = [
   {
     title: "Conviction Likelihood",
-    detail: "Estimate the probability of conviction based on structured case and defendant features.",
+    icon: Scale,
+    toneClass: "is-conviction",
   },
   {
     title: "Charge Severity",
-    detail: "Predict expected seriousness of charges to support triage and judicial workflow planning.",
+    icon: Sparkles,
+    toneClass: "is-severity",
   },
   {
     title: "Recidivism Risk",
-    detail: "Assess the likelihood of re-offense using prior records, juvenile history, and timing signals.",
+    icon: History,
+    toneClass: "is-recidivism",
   },
   {
-    title: "Predicted Decile Score (general)",
-    detail: "Generate a generalized decile-style risk score for comparative case-level risk interpretation.",
+    title: "Predicted Decile Score",
+    icon: UserRound,
+    toneClass: "is-decile",
   },
 ];
 
@@ -389,21 +393,22 @@ export default function MainPortal() {
                 >
                   <div className="portal-home-features-head">
                     <p className="portal-kicker">Main Features</p>
-                    <h3>Scroll to explore each prediction module</h3>
                   </div>
 
                   <div className="portal-home-feature-list">
                     {homeFeatureBlocks.map((feature, index) => (
                       <motion.article
                         key={feature.title}
-                        className="portal-card portal-home-feature-item"
+                        className="portal-card portal-home-feature-item portal-home-feature-icon-card"
                         initial={{ opacity: 0, y: 28 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, amount: 0.4 }}
                         transition={{ duration: 0.42, delay: index * 0.08, ease: "easeOut" }}
                       >
+                        <span className={`portal-home-feature-icon ${feature.toneClass}`}>
+                          <feature.icon size={24} strokeWidth={2.1} />
+                        </span>
                         <h4>{feature.title}</h4>
-                        <p>{feature.detail}</p>
                       </motion.article>
                     ))}
                   </div>

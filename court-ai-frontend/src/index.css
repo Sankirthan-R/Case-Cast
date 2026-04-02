@@ -952,7 +952,7 @@ a {
 
 .portal-content {
   width: min(1220px, 100%);
-  margin: 1rem auto 0;
+  margin: 1.8rem auto 0;
   flex: 1;
 }
 
@@ -1032,14 +1032,61 @@ a {
   font-family: "Bodoni Moda", "Times New Roman", serif;
 }
 
+.portal-home-features-head .portal-kicker {
+  font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
 .portal-home-feature-list {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.72rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  scrollbar-width: thin;
+}
+
+.portal-home-feature-icon-card {
+  min-height: 132px;
+  min-width: 220px;
+  flex: 1 0 0;
   display: grid;
-  gap: 0.7rem;
+  place-items: center;
+  gap: 0.65rem;
+  text-align: center;
+  background: linear-gradient(152deg, rgba(13, 24, 44, 0.58), rgba(15, 31, 58, 0.42));
+}
+
+.portal-home-feature-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(225, 238, 255, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 14px 30px rgba(4, 12, 28, 0.45);
+}
+
+.portal-home-feature-icon.is-conviction {
+  background: linear-gradient(150deg, rgba(149, 198, 255, 0.36), rgba(67, 125, 215, 0.28));
+}
+
+.portal-home-feature-icon.is-severity {
+  background: linear-gradient(150deg, rgba(255, 192, 120, 0.36), rgba(198, 108, 64, 0.3));
+}
+
+.portal-home-feature-icon.is-recidivism {
+  background: linear-gradient(150deg, rgba(178, 147, 255, 0.34), rgba(95, 72, 193, 0.3));
+}
+
+.portal-home-feature-icon.is-decile {
+  background: linear-gradient(150deg, rgba(126, 255, 208, 0.28), rgba(62, 162, 151, 0.3));
 }
 
 .portal-home-feature-item h4 {
   margin: 0;
-  font-size: clamp(1rem, 2.3vw, 1.28rem);
+  font-size: clamp(0.95rem, 2vw, 1.14rem);
   font-family: "Bodoni Moda", "Times New Roman", serif;
 }
 
@@ -1531,6 +1578,10 @@ a {
   .portal-home-quick-stats {
     grid-template-columns: 1fr;
   }
+
+  .portal-home-feature-icon-card {
+    min-width: 210px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1555,7 +1606,7 @@ a {
   }
 
   .portal-content {
-    margin-top: 0.72rem;
+    margin-top: 1.2rem;
   }
 
   .portal-home-hero,
