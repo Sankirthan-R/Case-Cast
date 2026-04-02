@@ -168,26 +168,33 @@ export default function MainPortal() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.48, ease: "easeOut" }}
         >
-          <div className="portal-nav-links" role="tablist" aria-label="Main navigation tabs">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const active = activeTab === item.key;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={`portal-nav-link${active ? " is-active" : ""}`}
-                  onClick={() => setActiveTab(item.key)}
-                  role="tab"
-                  aria-selected={active}
-                >
-                  {active && <motion.span className="portal-nav-active-glow" layoutId="portal-nav-active" />}
-                  <Icon size={16} strokeWidth={2} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          <StarBorder
+            as="div"
+            className="portal-nav-shell"
+            color="rgba(209, 231, 255, 0.88)"
+            speed="7.4s"
+          >
+            <div className="portal-nav-links" role="tablist" aria-label="Main navigation tabs">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = activeTab === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`portal-nav-link${active ? " is-active" : ""}`}
+                    onClick={() => setActiveTab(item.key)}
+                    role="tab"
+                    aria-selected={active}
+                  >
+                    {active && <motion.span className="portal-nav-active-glow" layoutId="portal-nav-active" />}
+                    <Icon size={16} strokeWidth={2} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </StarBorder>
         </motion.nav>
       </header>
 
@@ -203,7 +210,12 @@ export default function MainPortal() {
           >
             {activeTab === "home" && (
               <div className="portal-home-flow">
-                <section className="portal-home-hero">
+                <StarBorder
+                  as="section"
+                  className="portal-home-shell portal-home-hero"
+                  color="rgba(212, 233, 255, 0.9)"
+                  speed="7.2s"
+                >
                   <ScrollFloat
                     containerClassName="portal-scroll-title-wrap"
                     textClassName="portal-scroll-title"
@@ -252,9 +264,14 @@ export default function MainPortal() {
                   >
                     Start Casting
                   </StarBorder>
-                </section>
+                </StarBorder>
 
-                <section className="portal-home-features">
+                <StarBorder
+                  as="section"
+                  className="portal-home-shell portal-home-features"
+                  color="rgba(206, 228, 255, 0.82)"
+                  speed="8s"
+                >
                   <div className="portal-home-features-head">
                     <p className="portal-kicker">Main Features</p>
                     <h3>Scroll to explore each prediction module</h3>
@@ -275,7 +292,7 @@ export default function MainPortal() {
                       </motion.article>
                     ))}
                   </div>
-                </section>
+                </StarBorder>
 
                 <section className="portal-grid portal-grid-home">
                   {spotlightFeatures.map((feature) => {
@@ -474,8 +491,8 @@ export default function MainPortal() {
           </div>
           <div className="portal-footer-meta">
             <span>Copyright © 2026 CaseCast Technologies. All rights reserved.</span>
-            <span>Contact: support@casecast.ai | +1 (555) 010-2048</span>
-            <span>Address: 221B Justice Avenue, Suite 402, New York, NY 10001</span>
+            <span>Contact: sankirthan1811@gmail.com | +91 9876543210</span>
+            <span>Address: Sir M Visveshwaraih block, NMAMIT, Nitte, Udupi</span>
           </div>
         </div>
       </footer>

@@ -855,6 +855,8 @@ a {
 
 .portal-shell {
   min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   padding: 1rem 1.2rem 1.4rem;
 }
 
@@ -871,6 +873,15 @@ a {
   justify-content: center;
 }
 
+.portal-nav-shell {
+  width: min(760px, 100%);
+  border-radius: 999px;
+}
+
+.portal-nav-shell > .star-border__content {
+  display: block;
+}
+
 .portal-nav-dock {
   width: min(760px, 100%);
 }
@@ -880,13 +891,13 @@ a {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
   gap: 0.36rem;
-  width: min(760px, 100%);
+  width: 100%;
   border-radius: 999px;
   border: 1px solid rgba(227, 238, 255, 0.34);
-  background: linear-gradient(120deg, rgba(14, 22, 40, 0.78), rgba(7, 13, 27, 0.8));
-  box-shadow: 0 18px 46px rgba(1, 6, 18, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(16px) saturate(132%);
-  -webkit-backdrop-filter: blur(16px) saturate(132%);
+  background: linear-gradient(120deg, rgba(14, 22, 40, 0.56), rgba(7, 13, 27, 0.62));
+  box-shadow: 0 16px 40px rgba(1, 6, 18, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(18px) saturate(138%);
+  -webkit-backdrop-filter: blur(18px) saturate(138%);
   padding: 0.42rem;
 }
 
@@ -937,6 +948,7 @@ a {
 .portal-content {
   width: min(1220px, 100%);
   margin: 1rem auto 0;
+  flex: 1;
 }
 
 .portal-home-flow {
@@ -948,9 +960,9 @@ a {
   min-height: 66vh;
   border-radius: 24px;
   border: 1px solid rgba(224, 238, 255, 0.28);
-  background: linear-gradient(150deg, rgba(8, 18, 35, 0.5), rgba(15, 30, 54, 0.44));
-  backdrop-filter: blur(13px) saturate(136%);
-  -webkit-backdrop-filter: blur(13px) saturate(136%);
+  background: transparent;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   padding: 1rem;
   display: grid;
   align-content: center;
@@ -990,12 +1002,23 @@ a {
 .portal-home-features {
   border-radius: 24px;
   border: 1px solid rgba(223, 237, 255, 0.26);
-  background: linear-gradient(160deg, rgba(7, 16, 31, 0.5), rgba(12, 24, 45, 0.44));
-  backdrop-filter: blur(12px) saturate(136%);
-  -webkit-backdrop-filter: blur(12px) saturate(136%);
+  background: transparent;
+  backdrop-filter: blur(15px) saturate(140%);
+  -webkit-backdrop-filter: blur(15px) saturate(140%);
   padding: 1rem;
   display: grid;
   gap: 0.8rem;
+}
+
+.portal-home-shell.star-border {
+  display: block;
+}
+
+.portal-home-shell > .star-border__content {
+  display: grid;
+  align-items: inherit;
+  justify-items: inherit;
+  gap: inherit;
 }
 
 .portal-home-features-head h3 {
@@ -1023,10 +1046,12 @@ a {
 .portal-panel {
   border-radius: 30px;
   border: 1px solid rgba(224, 238, 255, 0.35);
-  background: linear-gradient(160deg, rgba(9, 20, 39, 0.58), rgba(19, 33, 59, 0.45));
-  box-shadow: 0 34px 78px rgba(1, 8, 23, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(20px) saturate(145%);
-  -webkit-backdrop-filter: blur(20px) saturate(145%);
+  background:
+    linear-gradient(155deg, rgba(205, 224, 255, 0.1), rgba(205, 224, 255, 0) 32%),
+    linear-gradient(160deg, rgba(9, 20, 39, 0.28), rgba(19, 33, 59, 0.2));
+  box-shadow: 0 30px 74px rgba(1, 8, 23, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
   padding: 1.25rem;
 }
 
