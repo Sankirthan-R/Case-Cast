@@ -8,6 +8,7 @@ const ClickSpark = ({
   duration = 400,
   easing = 'ease-out',
   extraScale = 1.0,
+  sparkZIndex = 40,
   className = '',
   children
 }) => {
@@ -133,7 +134,8 @@ const ClickSpark = ({
     <div className={`relative ${className}`.trim()} onClick={handleClick}>
       <canvas
         ref={canvasRef}
-        className="block absolute inset-0 select-none pointer-events-none" />
+        className="block absolute inset-0 select-none pointer-events-none"
+        style={{ zIndex: sparkZIndex }} />
       {children}
     </div>
   );

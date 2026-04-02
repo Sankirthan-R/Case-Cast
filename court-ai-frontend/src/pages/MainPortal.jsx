@@ -1,17 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Activity,
-  ChevronRight,
   History,
   Home,
-  Landmark,
   Scale,
-  ShieldCheck,
   Sparkles,
   UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import BorderGlow from "../components/BorderGlow/BorderGlow";
 import ClickSpark from "../components/ClickSpark";
 import ScrollFloat from "../components/ScrollFloat/ScrollFloat";
 import StarBorder from "../components/StarBorder";
@@ -25,62 +20,118 @@ const navItems = [
 
 const initialCastingInputs = {
   age: "",
-  gender: "",
-  city: "",
-  hour: "",
+  sex: "",
+  priorOffenses: "",
+  juvenileFelonyCount: "",
+  juvenileMisdemeanorCount: "",
+  juvenileOtherCount: "",
+  daysBetweenArrestAndScreening: "",
+  daysFromOffenseToScreen: "",
+  jailDurationDays: "",
 };
 
 const homeFeatureBlocks = [
   {
-    title: "Case-Type Prediction",
-    detail: "Classify probable legal category based on case context and narrative signals.",
+    title: "Conviction Likelihood",
+    detail: "Estimate the probability of conviction based on structured case and defendant features.",
   },
   {
-    title: "Case-Closure Prediction",
-    detail: "Estimate closure direction such as settlement, conviction, acquittal, or dismissal.",
+    title: "Charge Severity",
+    detail: "Predict expected seriousness of charges to support triage and judicial workflow planning.",
   },
   {
-    title: "Weapon Prediction",
-    detail: "Infer likely weapon/instrument type from witness and forensic textual hints.",
+    title: "Recidivism Risk",
+    detail: "Assess the likelihood of re-offense using prior records, juvenile history, and timing signals.",
   },
   {
-    title: "Risk Score Prediction",
-    detail: "Generate structured risk confidence scoring for legal strategy and triage support.",
+    title: "Predicted Decile Score (general)",
+    detail: "Generate a generalized decile-style risk score for comparative case-level risk interpretation.",
   },
 ];
 
-const spotlightFeatures = [
-  {
-    title: "Outcome Intelligence",
-    detail: "Model-ready MCQ casting flow tuned for legal case outcomes.",
-    icon: Scale,
-  },
-  {
-    title: "Forensic Timeline",
-    detail: "Structured prediction history to audit confidence trends over time.",
-    icon: Activity,
-  },
-  {
-    title: "Secure Workspace",
-    detail: "Privacy-first frontend architecture for sensitive case narratives.",
-    icon: ShieldCheck,
-  },
-];
+const predictedClasses = ["Low Risk", "Moderate Risk", "High Risk"];
 
-const predictedClasses = ["High Risk", "Moderate Risk", "Low Risk", "Watchlist"];
+const normalizeConfidence = (value) => {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return null;
+  }
 
-const getPrediction = ({ age, gender, city, hour }) => {
-  const seed =
-    Number(age || 0) * 11 +
-    Number(hour || 0) * 19 +
-    [...`${gender}${city}`].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const predictionIndex = Math.abs(seed) % predictedClasses.length;
-  const confidence = 74 + (seed % 22);
+  return value <= 1 ? Math.round(value * 100) : Math.round(value);
+};
+
+const getFallbackPrediction = (features) => {
+  const riskSeed =
+    features.priorOffenses * 2 +
+    features.juvenileFelonyCount * 2 +
+    features.juvenileMisdemeanorCount +
+    features.juvenileOtherCount +
+    Math.max(0, features.daysFromOffenseToScreen - 10) * 0.04 +
+    Math.max(0, Math.abs(features.daysBetweenArrestAndScreening) - 7) * 0.03 +
+    Math.max(0, features.jailDurationDays - 2) * 0.12;
+
+  let outcome = "Low Risk";
+  if (riskSeed >= 10) {
+    outcome = "High Risk";
+  } else if (riskSeed >= 5) {
+    outcome = "Moderate Risk";
+  }
 
   return {
-    outcome: predictedClasses[predictionIndex],
-    confidence: Math.min(96, Math.max(68, confidence)),
+    outcome,
+    confidence: Math.min(95, Math.max(68, 68 + Math.round(riskSeed * 2.4))),
+    source: "fallback",
   };
+};
+
+const getModelPrediction = async (features) => {
+  const endpoint = import.meta.env.VITE_PREDICT_API_URL;
+  if (!endpoint) {
+    throw new Error("Prediction endpoint not configured.");
+  }
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(features),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Prediction request failed with ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const outcome =
+    payload?.outcome ||
+    payload?.prediction_label ||
+    payload?.prediction ||
+    payload?.result ||
+    payload?.risk_class;
+
+  if (!outcome) {
+    throw new Error("Prediction response missing outcome.");
+  }
+
+  const modelConfidence =
+    normalizeConfidence(payload?.confidence) ||
+    normalizeConfidence(payload?.probability) ||
+    normalizeConfidence(payload?.risk_score);
+
+  return {
+    outcome: predictedClasses.includes(outcome) ? outcome : String(outcome),
+    confidence: modelConfidence ?? 0,
+    source: "model",
+  };
+};
+
+const parseNumericInput = (value) => {
+  if (value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 };
 
 export default function MainPortal() {
@@ -88,6 +139,8 @@ export default function MainPortal() {
   const [castingInputs, setCastingInputs] = useState(initialCastingInputs);
   const [result, setResult] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
+  const [formError, setFormError] = useState("");
+  const [isPredicting, setIsPredicting] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("casecast-history");
@@ -123,45 +176,107 @@ export default function MainPortal() {
 
   const updateCastingInput = (key, value) => {
     setCastingInputs((prev) => ({ ...prev, [key]: value }));
+    setFormError("");
   };
 
-  const handlePredict = (event) => {
+  const handlePredict = async (event) => {
     event.preventDefault();
 
-    if (
-      !castingInputs.age.trim() ||
-      !castingInputs.gender.trim() ||
-      !castingInputs.city.trim() ||
-      !castingInputs.hour.trim()
-    ) {
+    const parsed = {
+      age: parseNumericInput(castingInputs.age),
+      sex: castingInputs.sex.trim().toUpperCase(),
+      priorOffenses: parseNumericInput(castingInputs.priorOffenses),
+      juvenileFelonyCount: parseNumericInput(castingInputs.juvenileFelonyCount),
+      juvenileMisdemeanorCount: parseNumericInput(castingInputs.juvenileMisdemeanorCount),
+      juvenileOtherCount: parseNumericInput(castingInputs.juvenileOtherCount),
+      daysBetweenArrestAndScreening: parseNumericInput(castingInputs.daysBetweenArrestAndScreening),
+      daysFromOffenseToScreen: parseNumericInput(castingInputs.daysFromOffenseToScreen),
+      jailDurationDays: parseNumericInput(castingInputs.jailDurationDays),
+    };
+
+    const hasNullNumber = Object.entries(parsed)
+      .filter(([key]) => key !== "sex")
+      .some(([, value]) => value === null);
+
+    if (hasNullNumber || !parsed.sex) {
+      setFormError("Please fill all input features before prediction.");
       return;
     }
 
-    const prediction = getPrediction(castingInputs);
+    if (parsed.age < 18) {
+      setFormError("Age must be 18 or older.");
+      return;
+    }
+
+    if (!["M", "F"].includes(parsed.sex)) {
+      setFormError("Sex must be M or F.");
+      return;
+    }
+
+    const nonNegativeKeys = [
+      "priorOffenses",
+      "juvenileFelonyCount",
+      "juvenileMisdemeanorCount",
+      "juvenileOtherCount",
+      "daysFromOffenseToScreen",
+      "jailDurationDays",
+    ];
+
+    const hasNegativeValue = nonNegativeKeys.some((key) => parsed[key] < 0);
+    if (hasNegativeValue) {
+      setFormError("Counts and non-negative duration fields cannot be below 0.");
+      return;
+    }
+
+    setIsPredicting(true);
+    setFormError("");
+
+    let prediction;
+    try {
+      prediction = await getModelPrediction(parsed);
+    } catch (_error) {
+      prediction = getFallbackPrediction(parsed);
+    } finally {
+      setIsPredicting(false);
+    }
+
     const entry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      age: castingInputs.age.trim(),
-      gender: castingInputs.gender.trim(),
-      city: castingInputs.city.trim(),
-      hour: castingInputs.hour.trim(),
+      ...parsed,
       outcome: prediction.outcome,
       confidence: prediction.confidence,
+      source: prediction.source,
       createdAt: new Date().toISOString(),
     };
 
     setResult(prediction);
     setHistoryItems((prev) => [entry, ...prev].slice(0, 24));
-    setActiveTab("history");
   };
 
   const clearCasting = () => {
     setCastingInputs(initialCastingInputs);
     setResult(null);
+    setFormError("");
   };
 
   return (
-    <div className="portal-shell">
-      <header className="portal-header-wrap">
+    <ClickSpark
+      sparkColor="rgba(194, 223, 255, 0.9)"
+      sparkSize={8}
+      sparkRadius={20}
+      sparkCount={8}
+      duration={420}
+      easing="ease-out"
+      className="portal-page-spark"
+    >
+      <StarBorder
+        as="div"
+        className="portal-shell portal-shell-star"
+        color="rgba(194, 224, 255, 0.88)"
+        speed="9.4s"
+        thickness={1.1}
+      >
+        <header className="portal-header-wrap">
         <motion.nav
           className="portal-nav"
           initial={{ y: -24, opacity: 0 }}
@@ -294,60 +409,27 @@ export default function MainPortal() {
                   </div>
                 </StarBorder>
 
-                <section className="portal-grid portal-grid-home">
-                  {spotlightFeatures.map((feature) => {
-                    const Icon = feature.icon;
-                    return (
-                      <article key={feature.title} className="portal-card portal-feature-card">
-                        <div className="portal-feature-head">
-                          <span className="portal-feature-icon">
-                            <Icon size={16} strokeWidth={2} />
-                          </span>
-                          <h3>{feature.title}</h3>
-                        </div>
-                        <p>{feature.detail}</p>
-                        <span className="portal-feature-link">
-                          Explore
-                          <ChevronRight size={14} strokeWidth={2} />
-                        </span>
-                      </article>
-                    );
-                  })}
-
-                  <article className="portal-card portal-docket-card">
-                    <div className="portal-docket-head">
-                      <Landmark size={16} strokeWidth={2} />
-                      <h3>Daily Docket Snapshot</h3>
-                    </div>
-                    <p>
-                      42 active simulations today. Most likely outcome cluster: settlement + conditional relief.
-                    </p>
-                  </article>
-                </section>
               </div>
             )}
 
             {activeTab === "casting" && (
-              <ClickSpark
-                sparkColor="rgba(132, 201, 255, 0.95)"
-                sparkSize={9}
-                sparkRadius={22}
-                sparkCount={9}
-                duration={460}
-                easing="ease-out"
-                className="portal-casting-spark"
+              <StarBorder
+                as="div"
+                className="portal-casting-panel-star"
+                color="rgba(185, 220, 255, 0.9)"
+                speed="8.6s"
               >
-                <BorderGlow
-                  className="portal-casting-glow"
-                  glowColor="205 92% 84%"
-                  borderRadius={24}
-                  glowRadius={44}
-                  glowIntensity={0.92}
-                  edgeSensitivity={20}
-                  colors={["#8d15ff", "#35b5ff", "#88d3ff"]}
-                  backgroundColor="rgba(7, 16, 31, 0.65)"
+                <ClickSpark
+                  sparkColor="rgba(132, 201, 255, 0.95)"
+                  sparkSize={9}
+                  sparkRadius={22}
+                  sparkCount={9}
+                  duration={460}
+                  easing="ease-out"
+                  className="portal-casting-spark"
                 >
-                  <form className="portal-cast-form" onSubmit={handlePredict}>
+                  <div className="portal-casting-main-box">
+                    <form className="portal-cast-form" onSubmit={handlePredict}>
                     <div className="portal-cast-header">
                       <p className="portal-kicker">Casting Inputs</p>
                       <h3>Provide model features for prediction</h3>
@@ -355,62 +437,126 @@ export default function MainPortal() {
 
                     <div className="portal-cast-grid">
                       <label className="portal-field portal-mini-field">
-                        <span>Age</span>
+                        <span>Age (years, 18+)</span>
                         <input
                           type="number"
-                          min="1"
-                          max="100"
+                          min="18"
+                          max="120"
                           value={castingInputs.age}
                           onChange={(event) => updateCastingInput("age", event.target.value)}
-                          placeholder="e.g. 34"
+                          placeholder="e.g. 35"
                         />
                       </label>
 
                       <label className="portal-field portal-mini-field">
-                        <span>Gender</span>
+                        <span>Sex</span>
                         <select
-                          value={castingInputs.gender}
-                          onChange={(event) => updateCastingInput("gender", event.target.value)}
+                          value={castingInputs.sex}
+                          onChange={(event) => updateCastingInput("sex", event.target.value)}
                         >
-                          <option value="">Select gender</option>
-                          <option value="Female">Female</option>
-                          <option value="Male">Male</option>
-                          <option value="Other">Other</option>
+                          <option value="">Select M or F</option>
+                          <option value="M">M - Male</option>
+                          <option value="F">F - Female</option>
                         </select>
                       </label>
 
                       <label className="portal-field portal-mini-field">
-                        <span>City</span>
+                        <span>Number of Prior Offenses</span>
                         <input
-                          type="text"
-                          value={castingInputs.city}
-                          onChange={(event) => updateCastingInput("city", event.target.value)}
-                          placeholder="e.g. Bengaluru"
+                          type="number"
+                          min="0"
+                          value={castingInputs.priorOffenses}
+                          onChange={(event) => updateCastingInput("priorOffenses", event.target.value)}
+                          placeholder="e.g. 4"
                         />
                       </label>
 
                       <label className="portal-field portal-mini-field">
-                        <span>Hour</span>
+                        <span>Juvenile Felony Count</span>
                         <input
                           type="number"
                           min="0"
-                          max="23"
-                          value={castingInputs.hour}
-                          onChange={(event) => updateCastingInput("hour", event.target.value)}
-                          placeholder="0-23"
+                          value={castingInputs.juvenileFelonyCount}
+                          onChange={(event) =>
+                            updateCastingInput("juvenileFelonyCount", event.target.value)
+                          }
+                          placeholder="e.g. 2"
+                        />
+                      </label>
+
+                      <label className="portal-field portal-mini-field">
+                        <span>Juvenile Misdemeanor Count</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={castingInputs.juvenileMisdemeanorCount}
+                          onChange={(event) =>
+                            updateCastingInput("juvenileMisdemeanorCount", event.target.value)
+                          }
+                          placeholder="e.g. 0"
+                        />
+                      </label>
+
+                      <label className="portal-field portal-mini-field">
+                        <span>Juvenile Other Charges</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={castingInputs.juvenileOtherCount}
+                          onChange={(event) => updateCastingInput("juvenileOtherCount", event.target.value)}
+                          placeholder="e.g. 0"
+                        />
+                      </label>
+
+                      <label className="portal-field portal-mini-field">
+                        <span>Days Between Arrest and Screen</span>
+                        <input
+                          type="number"
+                          value={castingInputs.daysBetweenArrestAndScreening}
+                          onChange={(event) =>
+                            updateCastingInput("daysBetweenArrestAndScreening", event.target.value)
+                          }
+                          placeholder="e.g. -20"
+                        />
+                      </label>
+
+                      <label className="portal-field portal-mini-field">
+                        <span>Days from Offense to Screen</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={castingInputs.daysFromOffenseToScreen}
+                          onChange={(event) =>
+                            updateCastingInput("daysFromOffenseToScreen", event.target.value)
+                          }
+                          placeholder="e.g. 22"
+                        />
+                      </label>
+
+                      <label className="portal-field portal-mini-field">
+                        <span>Jail Duration (days)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={castingInputs.jailDurationDays}
+                          onChange={(event) => updateCastingInput("jailDurationDays", event.target.value)}
+                          placeholder="e.g. 4"
                         />
                       </label>
                     </div>
+
+                    {formError && <p className="portal-form-error">{formError}</p>}
 
                     <div className="portal-cast-actions">
                       <StarBorder
                         as="button"
                         type="submit"
+                        disabled={isPredicting}
                         className="portal-primary"
                         color="rgba(206, 230, 255, 0.92)"
                         speed="6.4s"
                       >
-                        Predict Outcome
+                        {isPredicting ? "Predicting..." : "Predict Output"}
                       </StarBorder>
                       <button type="button" className="portal-ghost" onClick={clearCasting}>
                         Reset
@@ -419,14 +565,16 @@ export default function MainPortal() {
 
                     {result && (
                       <article className="portal-result">
-                        <span>Predicted Outcome</span>
+                        <span>Predicted Result</span>
                         <h3>{result.outcome}</h3>
-                        <p>Confidence score: {result.confidence}%</p>
+                        {result.confidence > 0 ? <p>Confidence score: {result.confidence}%</p> : <p>Confidence: N/A</p>}
+                        <p>Source: {result.source === "model" ? "ML model" : "Frontend fallback"}</p>
                       </article>
                     )}
-                  </form>
-                </BorderGlow>
-              </ClickSpark>
+                    </form>
+                  </div>
+                </ClickSpark>
+              </StarBorder>
             )}
 
             {activeTab === "history" && (
@@ -445,10 +593,18 @@ export default function MainPortal() {
                       <span>{new Date(item.createdAt).toLocaleString()}</span>
                     </div>
                     <p>
-                      Age: {item.age} | Gender: {item.gender} | City: {item.city} | Hour: {item.hour}
+                      Age: {item.age} | Sex: {item.sex} | Prior Offenses: {item.priorOffenses}
+                    </p>
+                    <p>
+                      Juvenile(Felony/Misdemeanor/Other): {item.juvenileFelonyCount}/
+                      {item.juvenileMisdemeanorCount}/{item.juvenileOtherCount}
+                    </p>
+                    <p>
+                      Days(Arrest-Screen/Offense-Screen): {item.daysBetweenArrestAndScreening}/
+                      {item.daysFromOffenseToScreen} | Jail Duration: {item.jailDurationDays}
                     </p>
                     <div className="portal-history-meta">
-                      <span>Feature Input: Structured (4 fields)</span>
+                      <span>Feature Input: Structured (9 fields)</span>
                       <span>Confidence: {item.confidence}%</span>
                     </div>
                   </article>
@@ -474,7 +630,7 @@ export default function MainPortal() {
                 <article className="portal-card portal-preference">
                   <h3>Model Context</h3>
                   <p>Domain: Legal outcome classification</p>
-                  <p>Input mode: Age + Gender + City + Hour</p>
+                  <p>Input mode: COMPAS-style structured features</p>
                   <p>History retention: 24 recent predictions</p>
                 </article>
               </div>
@@ -496,6 +652,7 @@ export default function MainPortal() {
           </div>
         </div>
       </footer>
-    </div>
+      </StarBorder>
+    </ClickSpark>
   );
 }
