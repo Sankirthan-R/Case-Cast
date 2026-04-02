@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import Beams from "./components/Beams";
 import ClickSpark from "./components/ClickSpark";
 import FrostedLoginForm from "./components/FrostedLoginForm";
 import SplitText from "./components/SplitText";
@@ -200,18 +199,8 @@ function App() {
 
   return (
     <div className="app-shell">
-      <div className="site-beams" aria-hidden="true">
-        <Beams
-          beamWidth={2.1}
-          beamHeight={18}
-          beamNumber={14}
-          lightColor="#f6f1d0"
-          speed={1.4}
-          noiseIntensity={1.15}
-          scale={0.24}
-          rotation={8}
-        />
-      </div>
+      <div className="site-background" aria-hidden="true" />
+      <div className="site-background-tint" aria-hidden="true" />
 
       <ClickSpark
         sparkColor="rgba(198, 224, 255, 0.9)"

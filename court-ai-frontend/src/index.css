@@ -63,7 +63,7 @@ body,
 body {
   font-family: "Manrope", "Geist Mono", ui-monospace, "SF Mono", Menlo, Monaco,
     Consolas, "Liberation Mono", "Courier New", monospace;
-  background: radial-gradient(circle at 16% 12%, #10253f 0%, #050709 34%, #010204 100%);
+  background: #040404;
   color: #ffffff;
 }
 
@@ -73,17 +73,35 @@ body {
   isolation: isolate;
 }
 
-.site-beams {
+.site-background {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  opacity: 0.62;
-  filter: saturate(132%) contrast(118%);
+  background-image: url("/court.jpeg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: saturate(96%) contrast(94%) brightness(0.94);
+}
+
+.site-background-tint {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.48) 74%,
+      rgba(0, 0, 0, 0.4) 84%,
+      rgba(0, 0, 0, 0.56) 100%
+    ),
+    radial-gradient(circle at 50% 45%, rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.46) 80%);
 }
 
 .app-content {
   position: relative;
+  z-index: 3;
 }
 
 a {
@@ -235,7 +253,7 @@ a {
 
 .dot-title .split-char {
   display: inline-block;
-  background: linear-gradient(135deg, #f8fbff 0%, #d8e3ff 40%, #ffffff 78%);
+  background: linear-gradient(135deg, #fff7e6 0%, #e4c998 46%, #fff2dc 82%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -930,7 +948,9 @@ a {
   min-height: 66vh;
   border-radius: 24px;
   border: 1px solid rgba(224, 238, 255, 0.28);
-  background: linear-gradient(150deg, rgba(8, 18, 35, 0.62), rgba(15, 30, 54, 0.56));
+  background: linear-gradient(150deg, rgba(8, 18, 35, 0.5), rgba(15, 30, 54, 0.44));
+  backdrop-filter: blur(13px) saturate(136%);
+  -webkit-backdrop-filter: blur(13px) saturate(136%);
   padding: 1rem;
   display: grid;
   align-content: center;
@@ -949,8 +969,8 @@ a {
   font-size: clamp(2.2rem, 10vw, 7rem);
   line-height: 1;
   letter-spacing: 0.1em;
-  color: #f7fbff;
-  text-shadow: 0 0 22px rgba(182, 212, 255, 0.22), 0 14px 38px rgba(1, 8, 20, 0.6);
+  color: #f6e8c8;
+  text-shadow: 0 0 18px rgba(242, 220, 174, 0.24), 0 14px 38px rgba(1, 8, 20, 0.62);
 }
 
 .portal-home-subtitle {
@@ -970,7 +990,9 @@ a {
 .portal-home-features {
   border-radius: 24px;
   border: 1px solid rgba(223, 237, 255, 0.26);
-  background: linear-gradient(160deg, rgba(7, 16, 31, 0.62), rgba(12, 24, 45, 0.56));
+  background: linear-gradient(160deg, rgba(7, 16, 31, 0.5), rgba(12, 24, 45, 0.44));
+  backdrop-filter: blur(12px) saturate(136%);
+  -webkit-backdrop-filter: blur(12px) saturate(136%);
   padding: 1rem;
   display: grid;
   gap: 0.8rem;
@@ -1001,10 +1023,10 @@ a {
 .portal-panel {
   border-radius: 30px;
   border: 1px solid rgba(224, 238, 255, 0.35);
-  background: linear-gradient(160deg, rgba(9, 20, 39, 0.75), rgba(19, 33, 59, 0.62));
+  background: linear-gradient(160deg, rgba(9, 20, 39, 0.58), rgba(19, 33, 59, 0.45));
   box-shadow: 0 34px 78px rgba(1, 8, 23, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(14px) saturate(132%);
-  -webkit-backdrop-filter: blur(14px) saturate(132%);
+  backdrop-filter: blur(20px) saturate(145%);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
   padding: 1.25rem;
 }
 
@@ -1024,7 +1046,9 @@ a {
 .portal-card {
   border-radius: 24px;
   border: 1px solid rgba(223, 236, 255, 0.28);
-  background: linear-gradient(145deg, rgba(8, 16, 31, 0.62), rgba(17, 32, 57, 0.56));
+  background: linear-gradient(145deg, rgba(8, 16, 31, 0.5), rgba(17, 32, 57, 0.43));
+  backdrop-filter: blur(10px) saturate(132%);
+  -webkit-backdrop-filter: blur(10px) saturate(132%);
   padding: 1rem;
 }
 
