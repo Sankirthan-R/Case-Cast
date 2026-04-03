@@ -21,7 +21,7 @@ function Landing() {
 
   const spawnCursorLetter = (x, y) => {
     const now = performance.now();
-    if (now - lastSpawnRef.current < 112) {
+    if (now - lastSpawnRef.current < 150) {
       return;
     }
 
@@ -47,12 +47,12 @@ function Landing() {
     };
 
     setCursorLetters((prev) =>
-      prev.length > 38 ? [...prev.slice(-30), letter] : [...prev, letter],
+      prev.length > 26 ? [...prev.slice(-20), letter] : [...prev, letter],
     );
 
     setTimeout(() => {
       setCursorLetters((prev) => prev.filter((item) => item.id !== id));
-    }, 1580);
+    }, 1220);
   };
 
   const handleGetStarted = () => {
