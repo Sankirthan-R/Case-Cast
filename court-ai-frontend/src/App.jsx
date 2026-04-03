@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue, useSpring } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
@@ -19,6 +19,19 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
     setShowInlineLogin(true);
   };
 
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
+  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
+
+  const handleMouseMove = (e) => {
+    const { clientX, clientY } = e;
+    const xOffset = (clientX / window.innerWidth - 0.5) * 100; // max +/- 50px
+    const yOffset = (clientY / window.innerHeight - 0.5) * 100;
+    mouseX.set(xOffset);
+    mouseY.set(yOffset);
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { 
@@ -36,15 +49,17 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
   };
 
   return (
-    <div className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden font-sans bg-black selection:bg-cyan-500/30 text-white">
-      {/* Majestic Royal Courtroom Background (Landing Page Only) */}
-      <div className="fixed inset-0 z-0 pointer-events-none bg-[#050505]">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat opacity-[0.55]"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent"></div>
-        <div className="absolute inset-0 bg-black/30"></div>
-        {/* Subtle warm glow behind text */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-amber-700/20 filter blur-[150px] rounded-full"></div>
+    <div onMouseMove={handleMouseMove} className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden font-sans bg-black selection:bg-cyan-500/30 text-white">
+      {/* Futuristic Royal Blue / Cyan Nebula Background */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-black">
+        <motion.div style={{ x: springX, y: springY }} animate={{ rotate: 360, scale: [1, 1.05, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute top-[-20%] left-[-20%] w-[100vw] h-[100vw] opacity-[0.85]">
+          <div className="absolute top-[20%] right-[30%] w-[600px] h-[600px] bg-blue-600/50 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
+          <div className="absolute bottom-[20%] left-[20%] w-[700px] h-[700px] bg-cyan-700/50 rounded-full mix-blend-screen filter blur-[150px]"></div>
+        </motion.div>
+        <motion.div style={{ x: springX, y: springY }} animate={{ rotate: -360, scale: [1, 1.1, 1] }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }} className="absolute bottom-[-10%] right-[-20%] w-[100vw] h-[100vw] opacity-[0.75]">
+          <div className="absolute bottom-1/4 right-1/4 w-[700px] h-[700px] bg-indigo-600/50 rounded-full mix-blend-screen filter blur-[150px] animate-pulse"></div>
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-sky-500/40 rounded-full mix-blend-screen filter blur-[120px]"></div>
+        </motion.div>
       </div>
       
       {/* Grid Overlay & Subdued Noise */}
@@ -54,20 +69,22 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
         variants={containerVariants} 
         initial="hidden" 
         animate="visible" 
-        className="relative z-10 w-full max-w-6xl mx-auto px-6 py-20 md:py-32 flex flex-col items-center text-center my-auto min-h-screen justify-center"
+        className="relative z-10 w-full max-w-6xl mx-auto px-6 py-12 md:py-16 flex flex-col items-center text-center my-auto min-h-screen justify-center pb-20"
       >
-        <motion.div variants={itemVariants} className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-amber-500/20 bg-amber-950/20 text-amber-100 text-xs md:text-sm font-semibold tracking-[0.2em] uppercase mb-10 shadow-[0_0_30px_rgba(217,119,6,0.1)] backdrop-blur-xl">
-          <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)] animate-pulse"></span>
+        <motion.div variants={itemVariants} className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-white/5 text-slate-200 text-xs md:text-sm font-semibold tracking-[0.2em] uppercase mb-10 shadow-[0_0_30px_rgba(255,255,255,0.05)] backdrop-blur-xl">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-pulse"></span>
           Supreme Legal Intelligence
         </motion.div>
 
         <motion.div variants={itemVariants} className="mb-8 perspective-1000 w-full">
-          <h1 className="font-royal flex flex-wrap justify-center items-center py-4 drop-shadow-2xl">
+          <h1 className="font-display flex flex-wrap justify-center items-center py-4 drop-shadow-2xl">
             {"CASE CAST".split("").map((char, index) => {
                if (char === " ") return <span key={index} className="w-6 md:w-12"></span>;
                
-               // All characters use a completely vintage, premium warm gold/silver blend
-               const gradStyle = "text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-200 to-amber-600 drop-shadow-[0_0_40px_rgba(251,191,36,0.2)]";
+               const isCast = index > 4;
+               const gradStyle = isCast 
+                 ? "text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-600 drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]" 
+                 : "text-transparent bg-clip-text bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]";
 
                return (
                  <motion.span 
@@ -75,7 +92,7 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
                    initial={{ opacity: 0, y: 70, filter: 'blur(20px)', rotateX: -90, scale: 0.8 }}
                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)', rotateX: 0, scale: 1 }}
                    transition={{ duration: 1.5, delay: 0.2 + index * 0.1, type: "spring", stiffness: 80, damping: 20 }}
-                   className={`text-[4.5rem] sm:text-[6rem] md:text-[9rem] lg:text-[11rem] md:leading-none font-bold tracking-tight mx-[2px] md:mx-[6px] ${gradStyle}`}
+                   className={`text-[4.5rem] sm:text-[6rem] md:text-[9.5rem] lg:text-[11rem] md:leading-none font-bold tracking-tighter mx-[2px] md:mx-[6px] ${gradStyle}`}
                  >
                    {char}
                  </motion.span>
@@ -84,11 +101,11 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
           </h1>
         </motion.div>
         
-        <motion.p variants={itemVariants} className="max-w-3xl text-amber-100/70 text-lg md:text-2xl leading-relaxed mb-16 font-light tracking-wide shadow-black">
+        <motion.p variants={itemVariants} className="max-w-3xl text-slate-300 text-lg md:text-2xl leading-relaxed mb-10 font-light tracking-wide shadow-black">
           Leverage advanced machine learning architecture to forecast conviction rates, evaluate risk, and map recidivism with absolute situational awareness.
         </motion.p>
 
-        <motion.div variants={itemVariants} className="relative w-full max-w-md mx-auto flex justify-center h-[520px]">
+        <motion.div variants={itemVariants} className="relative w-full max-w-md mx-auto flex justify-center mt-4">
           <AnimatePresence mode="wait">
             {!showInlineLogin ? (
               <motion.button 
@@ -98,16 +115,16 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
                 exit={{ opacity: 0, scale: 0.9, y: -20, filter: 'blur(15px)' }}
                 transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 20 }}
                 onClick={handleGetStarted}
-                className="group absolute top-6 px-10 py-5 bg-black border border-white/10 hover:border-cyan-500/50 rounded-full shadow-[0_0_60px_rgba(0,0,0,0.8)] hover:shadow-[0_0_80px_rgba(6,182,212,0.3)] transition-all duration-500 flex items-center gap-4 overflow-hidden focus:outline-none"
+                className="group relative px-10 py-5 bg-black border border-white/10 hover:border-blue-500/50 rounded-full shadow-[0_0_60px_rgba(0,0,0,0.8)] hover:shadow-[0_0_80px_rgba(59,130,246,0.3)] transition-all duration-500 flex items-center gap-4 overflow-hidden focus:outline-none"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/30 to-indigo-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 <span className="relative z-10 font-display font-black tracking-[0.15em] uppercase text-sm text-slate-100 group-hover:text-white flex items-center justify-center gap-4">
                   Get Started
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-black transition-colors duration-300 shadow-inner">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-inner">
                     <ChevronRightIcon />
                   </div>
                 </span>
-                <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/80 to-transparent scale-0 group-hover:scale-100 transition-transform duration-700 origin-center"></div>
+                <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500/80 to-transparent scale-0 group-hover:scale-100 transition-transform duration-700 origin-center"></div>
               </motion.button>
             ) : (
               <motion.div
@@ -116,11 +133,11 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
                 animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
                 exit={{ opacity: 0, scale: 0.95, y: -30, filter: 'blur(20px)' }}
                 transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.8 }}
-                className="absolute inset-x-0 top-0 w-full z-20"
+                className="w-full relative z-20 mt-4"
               >
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl rounded-[2.5rem] -z-10 shadow-[0_0_100px_rgba(0,0,0,0.9)] border border-white/10"></div>
                 <div className="p-8 md:p-10 relative">
-                   <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+                   <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
                    <FrostedLoginForm 
                      onClose={() => setShowInlineLogin(false)}
                      onLogin={onLogin}

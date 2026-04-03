@@ -12,7 +12,7 @@ const navItems = [
 
 const initialCastingInputs = {
   age: "",
-  sex: "",
+  gender: "",
   priorOffenses: "",
   juvenileFelonyCount: "",
   juvenileMisdemeanorCount: "",
@@ -123,6 +123,28 @@ export default function MainPortal({ user, onLogout }) {
     if (!supabase || !user?.id) localStorage.setItem("casecast-history", JSON.stringify(historyItems)); 
   }, [historyItems, user]);
 
+  useEffect(() => {
+    if (activeTab !== "casting") return;
+    const handleKeyDown = (e) => {
+      // Allow standard input navigation (Left/Right arrow)
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        const formContainer = document.getElementById("predictor-form-container");
+        if (!formContainer) return;
+        const focusable = Array.from(formContainer.querySelectorAll("input, select, button[type='submit']"));
+        const index = focusable.indexOf(document.activeElement);
+        if (index > -1) {
+          let nextIndex = e.key === "ArrowRight" ? index + 1 : index - 1;
+          if (nextIndex >= 0 && nextIndex < focusable.length) {
+            focusable[nextIndex].focus();
+            e.preventDefault();
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeTab]);
+
   const stats = useMemo(() => {
     const casts = historyItems.length;
     const avg = casts ? Math.round(historyItems.reduce((sum, item) => sum + (item.confidence || 0), 0) / casts) : 0;
@@ -137,7 +159,7 @@ export default function MainPortal({ user, onLogout }) {
   const handlePredict = async (event) => {
     event.preventDefault();
     const parsed = {
-      age: parseNumericInput(castingInputs.age), sex: castingInputs.sex.trim().toUpperCase(),
+      age: parseNumericInput(castingInputs.age), gender: castingInputs.gender.trim().toUpperCase(),
       priorOffenses: parseNumericInput(castingInputs.priorOffenses),
       juvenileFelonyCount: parseNumericInput(castingInputs.juvenileFelonyCount),
       juvenileMisdemeanorCount: parseNumericInput(castingInputs.juvenileMisdemeanorCount),
@@ -147,8 +169,8 @@ export default function MainPortal({ user, onLogout }) {
       jailDurationDays: parseNumericInput(castingInputs.jailDurationDays),
     };
 
-    const hasNullNumber = Object.entries(parsed).filter(([key]) => key !== "sex").some(([, value]) => value === null);
-    if (hasNullNumber || !parsed.sex) { setFormError("Please fill all input features before prediction."); return; }
+    const hasNullNumber = Object.entries(parsed).filter(([key]) => key !== "gender").some(([, value]) => value === null);
+    if (hasNullNumber || !parsed.gender) { setFormError("Please fill all input features before prediction."); return; }
     
     setIsPredicting(true); setFormError("");
     setApiStatus("offline");
@@ -168,7 +190,10 @@ export default function MainPortal({ user, onLogout }) {
               outcome: prediction.summary.outcome,
               confidence: prediction.summary.confidence
             }]);
-         } catch(e) {}
+         } catch(e) {
+            console.error("DB Save Failed", e);
+            setFormError("Failed to store prediction to Supabase. Check database config.");
+         }
       }
 
       setResult(prediction);
@@ -176,6 +201,27 @@ export default function MainPortal({ user, onLogout }) {
       setIsPredicting(false);
     }, 2500); // simulate ML work for the cool animation
   };
+
+  const AnimatedCount = ({ value, duration = 1.5 }) => {
+    const [count, setCount] = useState(0);
+    useEffect(() => {
+      let start = 0; const end = parseFloat(value); if (isNaN(end)) return;
+      const stepTime = Math.abs(Math.floor((duration * 1000) / 60));
+      let current = start; const increment = end / 60;
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= end) { setCount(end); clearInterval(timer); } else { setCount(current); }
+      }, stepTime);
+      return () => clearInterval(timer);
+    }, [value, duration]);
+    return <>{count.toFixed(1)}</>;
+  };
+
+  useEffect(() => {
+    if (showModelOverlay) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [showModelOverlay]);
 
   const CircularGauge = ({ label, value, color }) => {
     const circumference = 2 * Math.PI * 36;
@@ -195,7 +241,7 @@ export default function MainPortal({ user, onLogout }) {
               transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
             />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center font-display font-bold text-white text-lg">{value}%</div>
+          <div className="absolute inset-0 flex items-center justify-center font-display font-bold text-white text-lg"><AnimatedCount value={value} />%</div>
         </div>
         <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold">{label}</span>
       </div>
@@ -299,8 +345,8 @@ export default function MainPortal({ user, onLogout }) {
                {/* Hero Banner with Aurora/Nebula effect */}
                <div className="relative w-full rounded-[2.5rem] p-10 md:p-[4.5rem] overflow-hidden border border-white/10 group shadow-[0_0_120px_rgba(34,211,238,0.07)] bg-black">
                  {/* Intense animated blobs mimicking Aurora Background */}
-                 <div className="absolute top-[-50%] left-[-20%] w-[800px] h-[800px] bg-cyan-700/20 blur-[150px] rounded-full mix-blend-screen opacity-50 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse pointer-events-none"></div>
-                 <div className="absolute bottom-[-50%] right-[-20%] w-[800px] h-[800px] bg-indigo-700/20 blur-[150px] rounded-full mix-blend-screen opacity-50 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse delay-700 pointer-events-none"></div>
+                 <div className="absolute top-[-50%] left-[-20%] w-[800px] h-[800px] bg-cyan-600/40 blur-[150px] rounded-full mix-blend-screen opacity-70 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse pointer-events-none"></div>
+                 <div className="absolute bottom-[-50%] right-[-20%] w-[800px] h-[800px] bg-indigo-600/40 blur-[150px] rounded-full mix-blend-screen opacity-70 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse delay-700 pointer-events-none"></div>
                  
                  <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10 mix-blend-overlay pointer-events-none"></div>
                  
@@ -323,9 +369,11 @@ export default function MainPortal({ user, onLogout }) {
 
                {/* Spotlight Feature Cards for Core AI Functions */}
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-4">
-                 <div className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-colors">
-                   <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/40 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none"></div>
-                   <div className="relative h-full bg-black/90 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 border border-white/5 group-hover:border-cyan-500/30 transition-colors">
+                 <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.6, ease: "easeOut" }} className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-transform hover:-translate-y-1 hover:scale-[1.02] duration-300 cursor-default">
+                   {/* Animated Starborder Trail Hover Effect */}
+                   <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] rotate-[0deg] bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(34,211,238,1)_360deg)] opacity-0 group-hover:opacity-100 animate-[spin_3s_linear_infinite] transition-opacity duration-500"></div>
+                   
+                   <div className="relative h-full bg-black border border-transparent group-hover:border-white/5 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 transition-colors z-10 w-[calc(100%-2px)] m-[1px]">
                       <div className="w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300">
                         <Scale className="w-7 h-7 text-cyan-400" />
                       </div>
@@ -334,11 +382,12 @@ export default function MainPortal({ user, onLogout }) {
                         Anticipate formal court determinations and verdict likelihoods natively.<br/>Heavily influenced by prior offense records and historical precedence matrices.
                       </p>
                    </div>
-                 </div>
+                 </motion.div>
 
-                 <div className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-colors">
-                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/40 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none"></div>
-                   <div className="relative h-full bg-black/90 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 border border-white/5 group-hover:border-indigo-500/30 transition-colors">
+                 <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }} className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-transform hover:-translate-y-1 hover:scale-[1.02] duration-300 cursor-default">
+                   <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] rotate-[0deg] bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(99,102,241,1)_360deg)] opacity-0 group-hover:opacity-100 animate-[spin_3s_linear_infinite] transition-opacity duration-500"></div>
+                   
+                   <div className="relative h-full bg-black border border-transparent group-hover:border-white/5 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 transition-colors z-10 w-[calc(100%-2px)] m-[1px]">
                       <div className="w-14 h-14 rounded-2xl bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-all duration-300">
                         <Activity className="w-7 h-7 text-indigo-400" />
                       </div>
@@ -347,11 +396,12 @@ export default function MainPortal({ user, onLogout }) {
                         Classify active legal infractions completely automatically.<br/>Determines core statutory bailable and non-bailable alignments effortlessly.
                       </p>
                    </div>
-                 </div>
+                 </motion.div>
 
-                 <div className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-colors">
-                   <div className="absolute inset-0 bg-gradient-to-br from-rose-500/40 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none"></div>
-                   <div className="relative h-full bg-black/90 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 border border-white/5 group-hover:border-rose-500/30 transition-colors">
+                 <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }} className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-transform hover:-translate-y-1 hover:scale-[1.02] duration-300 cursor-default">
+                   <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] rotate-[0deg] bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(244,63,94,1)_360deg)] opacity-0 group-hover:opacity-100 animate-[spin_3s_linear_infinite] transition-opacity duration-500"></div>
+                   
+                   <div className="relative h-full bg-black border border-transparent group-hover:border-white/5 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 transition-colors z-10 w-[calc(100%-2px)] m-[1px]">
                       <div className="w-14 h-14 rounded-2xl bg-rose-950/80 border border-rose-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(244,63,94,0.4)] transition-all duration-300">
                         <ShieldAlert className="w-7 h-7 text-rose-400" />
                       </div>
@@ -360,7 +410,7 @@ export default function MainPortal({ user, onLogout }) {
                         Evaluate the likelihood and probability of future behavioral patterns.<br/>Computed chronologically using complex demographic algorithms.
                       </p>
                    </div>
-                 </div>
+                 </motion.div>
                </div>
             </motion.div>
           )}
@@ -375,7 +425,7 @@ export default function MainPortal({ user, onLogout }) {
                     <h2 className="font-display text-xl font-bold text-white flex items-center gap-2"><Sparkles className="w-5 h-5 text-cyan-400"/> Settings</h2>
                   </div>
 
-                  <form onSubmit={handlePredict} className="flex flex-col gap-5">
+                  <form id="predictor-form-container" onSubmit={handlePredict} className="flex flex-col gap-5">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Age (18+)</span><input name="age" type="number" min="18" max="120" className="input-glass bg-slate-900/60 py-2 px-3 text-sm" placeholder="e.g. 35" value={castingInputs.age} onChange={e => updateCastingInput('age', e.target.value)}/></label>
                       <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sex</span><select name="sex" className="input-glass bg-slate-900/60 py-2 px-2 text-sm" value={castingInputs.sex} onChange={e => updateCastingInput('sex', e.target.value)}><option value="">Sel</option><option value="M">M</option><option value="F">F</option></select></label>
@@ -439,7 +489,7 @@ export default function MainPortal({ user, onLogout }) {
                       <motion.div animate={{scale: [1, 1.5, 1], opacity: [0, 0.5, 0]}} transition={{duration: 1, repeat: Infinity}} className="absolute inset-0 bg-cyan-500 rounded-full blur-xl"></motion.div>
                     </div>
                     
-                    <h3 className="text-3xl font-display font-bold text-white mb-2 tracking-widest uppercase">Computing Matrix</h3>
+                    <h3 className="text-xl md:text-2xl font-display font-bold text-white mb-2 tracking-wide uppercase text-center max-w-sm">Computing the outcome, calculating probability of conviction, charge severity and recidivism</h3>
                     <div className="flex items-center gap-2">
                        <span className="w-2 h-2 bg-cyan-400 rounded-full animate-ping"></span>
                        <p className="text-cyan-400 font-mono text-sm tracking-widest uppercase">Evaluating 12x Feature Constraints</p>
@@ -655,25 +705,24 @@ export default function MainPortal({ user, onLogout }) {
                           <CircularGauge label="CV F1 Score" value={details.cvF1} color={colors[key]} />
                        </div>
 
-                       <AnimatePresence>
-                         {isExpanded && (
-                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                       {isExpanded && (
+                           <div className="overflow-hidden">
                              <div className="pt-6 mt-4 border-t border-white/5 grid grid-cols-2 md:grid-cols-4 gap-4">
                                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center justify-center">
                                  <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">Accuracy</span>
-                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}>{details.accuracy}%</span>
+                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}><AnimatedCount value={details.accuracy} />%</span>
                                </div>
                                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center justify-center">
                                  <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">F1 Score</span>
-                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}>{details.f1}%</span>
+                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}><AnimatedCount value={details.f1} />%</span>
                                </div>
                                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center justify-center">
                                  <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">Precision</span>
-                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}>{details.precision}%</span>
+                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}><AnimatedCount value={details.precision} />%</span>
                                </div>
                                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center justify-center">
                                  <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">Recall</span>
-                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}>{details.recall}%</span>
+                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}><AnimatedCount value={details.recall} />%</span>
                                </div>
                              </div>
                              
@@ -689,9 +738,8 @@ export default function MainPortal({ user, onLogout }) {
                                   </div>
                                </div>
                              )}
-                           </motion.div>
+                           </div>
                          )}
-                       </AnimatePresence>
                      </motion.div>
                    )
                  })}
