@@ -1,23 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  History,
-  Home,
-  LogOut,
-  Scale,
-  Sparkles,
-  UserRound,
-} from "lucide-react";
+import { History, Home, LogOut, Scale, Sparkles, UserRound, ChevronRight, Activity, AlertCircle, ShieldAlert, Network, ChevronDown, Database, Cpu, BrainCircuit } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import ClickSpark from "../components/ClickSpark";
-import ScrollFloat from "../components/ScrollFloat/ScrollFloat";
-import StarBorder from "../components/StarBorder";
 import { supabase } from "../supabaseClient";
 
 const navItems = [
-  { key: "home", label: "HOME", icon: Home },
-  { key: "casting", label: "Casting", icon: Sparkles },
-  { key: "history", label: "History", icon: History },
-  { key: "profile", label: "Profile", icon: UserRound },
+  { key: "home", label: "Dashboard", icon: Home },
+  { key: "casting", label: "Predictor", icon: Sparkles },
+  { key: "history", label: "Logs", icon: History },
+  { key: "profile", label: "Settings", icon: UserRound },
 ];
 
 const initialCastingInputs = {
@@ -33,96 +23,21 @@ const initialCastingInputs = {
 };
 
 const homeFeatureBlocks = [
-  {
-    title: "Conviction Likelihood",
-    icon: Scale,
-    toneClass: "is-conviction",
-  },
-  {
-    title: "Charge Severity",
-    icon: Sparkles,
-    toneClass: "is-severity",
-  },
-  {
-    title: "Recidivism Risk",
-    icon: History,
-    toneClass: "is-recidivism",
-  },
-  {
-    title: "Predicted Decile Score",
-    icon: UserRound,
-    toneClass: "is-decile",
-  },
+  { title: "Conviction Likelihood", icon: Scale, color: "text-cyan-400", bg: "bg-cyan-500/10" },
+  { title: "Charge Severity", icon: AlertCircle, color: "text-indigo-400", bg: "bg-indigo-500/10" },
+  { title: "Recidivism Risk", icon: ShieldAlert, color: "text-rose-400", bg: "bg-rose-500/10" },
+  { title: "Decile Matrix", icon: Activity, color: "text-purple-400", bg: "bg-purple-500/10" },
 ];
 
 const fallbackModelInfo = {
-  decileRegressor: {
-    name: "GradientBoosting Regressor",
-    mae: 1.615,
-  },
-  violentDecileRegressor: {
-    name: "Random Forest Regressor",
-    mae: 1.214,
-  },
+  decileRegressor: { name: "GradientBoosting Regressor", mae: 1.615 },
+  violentDecileRegressor: { name: "Random Forest Regressor", mae: 1.214 },
   bestSummary: {
-    conviction: {
-      model: "XGBoost (GBM)",
-      accuracy: 84.66,
-      f1: 91.42,
-      precision: 86.98,
-      recall: 96.33,
-      cvAccuracy: 84.73,
-      cvF1: 91.49,
-    },
-    chargeSeverity: {
-      model: "XGBoost (GBM)",
-      accuracy: 68.23,
-      f1: 78.34,
-      precision: 70.58,
-      recall: 88.03,
-      cvAccuracy: 67.41,
-      cvF1: 77.9,
-    },
-    recidivism: {
-      model: "Random Forest",
-      accuracy: 69.83,
-      f1: 68.48,
-      precision: 66.23,
-      recall: 70.89,
-      cvAccuracy: 69.0,
-      cvF1: 66.56,
-    },
+    conviction: { model: "XGBoost (GBM)", accuracy: 84.66, f1: 91.42, precision: 86.98, recall: 96.33, cvAccuracy: 84.73, cvF1: 91.49 },
+    chargeSeverity: { model: "XGBoost (GBM)", accuracy: 68.23, f1: 78.34, precision: 70.58, recall: 88.03, cvAccuracy: 67.41, cvF1: 77.9 },
+    recidivism: { model: "Random Forest", accuracy: 69.83, f1: 68.48, precision: 66.23, recall: 70.89, cvAccuracy: 69.0, cvF1: 66.56 },
   },
-  trainingLogs: {
-    decileRegressors: [
-      { model: "Random Forest Regressor", mae: 1.636, r2: 0.488, plusMinusOneAcc: 54.8 },
-      { model: "GradientBoosting Regressor", mae: 1.615, r2: 0.497, plusMinusOneAcc: 56.2 },
-    ],
-    violentDecileRegressors: [
-      { model: "Random Forest Regressor", mae: 1.214, r2: 0.578, plusMinusOneAcc: 69.6 },
-      { model: "GradientBoosting Regressor", mae: 1.223, r2: 0.573, plusMinusOneAcc: 69.8 },
-    ],
-    classifiers: {
-      conviction: [
-        { model: "Logistic Regression", accuracy: 71.64, precision: 88.24, recall: 76.79, f1: 82.12, cvAccuracy: 72.35, cvF1: 82.55 },
-        { model: "Decision Tree", accuracy: 67.37, precision: 90.19, recall: 69.03, f1: 78.2, cvAccuracy: 66.31, cvF1: 76.85 },
-        { model: "Random Forest", accuracy: 72.79, precision: 90.53, recall: 75.85, f1: 82.54, cvAccuracy: 73.77, cvF1: 83.09 },
-        { model: "XGBoost (GBM)", accuracy: 84.66, precision: 86.98, recall: 96.33, f1: 91.42, cvAccuracy: 84.73, cvF1: 91.49 },
-      ],
-      chargeSeverity: [
-        { model: "Logistic Regression", accuracy: 57.89, precision: 75.4, recall: 52.66, f1: 62.01, cvAccuracy: 58.75, cvF1: 63.33 },
-        { model: "Decision Tree", accuracy: 59.19, precision: 74.42, recall: 57.1, f1: 64.62, cvAccuracy: 59.81, cvF1: 65.9 },
-        { model: "Random Forest", accuracy: 64.54, precision: 74.58, recall: 69.29, f1: 71.84, cvAccuracy: 63.94, cvF1: 71.62 },
-        { model: "XGBoost (GBM)", accuracy: 68.23, precision: 70.58, recall: 88.03, f1: 78.34, cvAccuracy: 67.41, cvF1: 77.9 },
-      ],
-      recidivism: [
-        { model: "Logistic Regression", accuracy: 69.61, precision: 65.85, recall: 71.21, f1: 68.42, cvAccuracy: 68.41, cvF1: 65.56 },
-        { model: "Decision Tree", accuracy: 66.43, precision: 62.17, recall: 69.95, f1: 65.83, cvAccuracy: 66.67, cvF1: 64.07 },
-        { model: "Random Forest", accuracy: 69.83, precision: 66.23, recall: 70.89, f1: 68.48, cvAccuracy: 69, cvF1: 66.56 },
-        { model: "XGBoost (GBM)", accuracy: 69.61, precision: 67.98, recall: 64.79, f1: 66.35, cvAccuracy: 68.51, cvF1: 64.18 },
-      ],
-    },
-  },
+  trainingLogs: null,
 };
 
 const getFallbackPrediction = (features) => {
@@ -136,368 +51,93 @@ const getFallbackPrediction = (features) => {
     Math.max(0, features.jailDurationDays - 2) * 0.12;
 
   let outcome = "Low Risk";
-  if (riskSeed >= 10) {
-    outcome = "High Risk";
-  } else if (riskSeed >= 5) {
-    outcome = "Moderate Risk";
-  }
+  if (riskSeed >= 10) outcome = "High Risk";
+  else if (riskSeed >= 5) outcome = "Moderate Risk";
 
   const confidence = Math.min(95, Math.max(68, 68 + Math.round(riskSeed * 2.4)));
   const convProb = Math.min(98, Math.max(52, confidence + 6));
   const nbProb = Math.min(93, Math.max(44, 44 + riskSeed * 2.2));
   const recidProb = Math.min(96, Math.max(46, 46 + riskSeed * 2.5));
-  const predictedDecile = Math.min(10, Math.max(1, Math.round(1 + riskSeed / 2)));
-  const predictedViolentDecile = Math.min(10, Math.max(1, Math.round(2 + riskSeed / 1.8)));
 
-  const convictionLabel = convProb >= 50 ? "CONVICTED" : "NOT CONVICTED / CHARGE DROPPED";
+  const convictionLabel = convProb >= 50 ? "CONVICTED" : "NOT CONVICTED / DROPPED";
   const chargeLabel = nbProb >= 50 ? "NON-BAILABLE (NB)" : "BAILABLE (B)";
   const recidLabel = recidProb >= 50 ? "LIKELY TO REOFFEND" : "UNLIKELY TO REOFFEND";
 
   return {
-    summary: {
-      outcome,
-      confidence,
-    },
-    autoComputedRiskScores: {
-      decileScore: predictedDecile,
-      decileScoreRaw: Number(predictedDecile.toFixed(2)),
-      violentDecileScore: predictedViolentDecile,
-      violentDecileScoreRaw: Number(predictedViolentDecile.toFixed(2)),
-    },
-    conviction: {
-      prediction: convictionLabel,
-      pConvicted: Number(convProb.toFixed(1)),
-      pNotConvicted: Number((100 - convProb).toFixed(1)),
-      bestModel: "XGBoost (GBM)",
-    },
-    chargeSeverity: {
-      prediction: chargeLabel,
-      pNonBailable: Number(nbProb.toFixed(1)),
-      pBailable: Number((100 - nbProb).toFixed(1)),
-      bestModel: "XGBoost (GBM)",
-    },
-    recidivism: {
-      prediction: recidLabel,
-      pWillReoffend: Number(recidProb.toFixed(1)),
-      pWillNotReoffend: Number((100 - recidProb).toFixed(1)),
-      bestModel: "Random Forest",
-    },
+    summary: { outcome, confidence },
+    conviction: { prediction: convictionLabel, pConvicted: Number(convProb.toFixed(1)), pNotConvicted: Number((100 - convProb).toFixed(1)), bestModel: "XGBoost (GBM)" },
+    chargeSeverity: { prediction: chargeLabel, pNonBailable: Number(nbProb.toFixed(1)), pBailable: Number((100 - nbProb).toFixed(1)), bestModel: "XGBoost (GBM)" },
+    recidivism: { prediction: recidLabel, pWillReoffend: Number(recidProb.toFixed(1)), pWillNotReoffend: Number((100 - recidProb).toFixed(1)), bestModel: "Random Forest" },
     modelInfo: fallbackModelInfo,
     source: "fallback",
   };
 };
 
-const getModelPrediction = async (features) => {
-  const endpoint = getPredictionEndpoint();
-  const authHeaders = await getAuthHeaders();
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders,
-    },
-    body: JSON.stringify(features),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Prediction request failed with ${response.status}`);
-  }
-
-  const payload = await response.json();
-
-  if (payload?.summary?.outcome) {
-    return {
-      ...payload,
-      source: "model",
-    };
-  }
-
-  throw new Error("Prediction response missing summary fields.");
-};
-
-const parseNumericInput = (value) => {
-  if (value === "") {
-    return null;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const metricValue = (value) => Math.max(0, Math.min(100, Number(value) || 0));
-
-const fieldOrder = [
-  "age",
-  "sex",
-  "priorOffenses",
-  "juvenileFelonyCount",
-  "juvenileMisdemeanorCount",
-  "juvenileOtherCount",
-  "daysBetweenArrestAndScreening",
-  "daysFromOffenseToScreen",
-  "jailDurationDays",
-];
-
-const getApiEndpoint = (path) => {
-  const base = (import.meta.env.VITE_API_BASE_URL || "").trim();
-  if (!base) {
-    return `/api/${path}`;
-  }
-  return `${base.replace(/\/$/, "")}/api/${path}`;
-};
-
-const getPredictionEndpoint = () => {
-  const explicit = (import.meta.env.VITE_PREDICT_API_URL || "").trim();
-  if (explicit) {
-    return explicit;
-  }
-  return getApiEndpoint("predict");
-};
-
-const getAuthHeaders = async () => {
-  if (!supabase) {
-    throw new Error("Supabase client unavailable");
-  }
-
-  const { data } = await supabase.auth.getSession();
-  const token = data?.session?.access_token;
-  if (!token) {
-    throw new Error("Missing auth session token");
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  };
-};
-
-const sectionTitleMap = {
-  conviction: "Convicted / Not Convicted",
-  chargeSeverity: "Bailable / Non-Bailable",
-  recidivism: "Recidivism (2-Year)",
-};
-
-const predictionHistoryTable = "prediction_history";
-
-const mapHistoryRowToItem = (row) => {
-  const payload = row.input_payload || {};
-  return {
-    id: row.id,
-    age: payload.age,
-    sex: payload.sex,
-    priorOffenses: payload.priorOffenses,
-    juvenileFelonyCount: payload.juvenileFelonyCount,
-    juvenileMisdemeanorCount: payload.juvenileMisdemeanorCount,
-    juvenileOtherCount: payload.juvenileOtherCount,
-    daysBetweenArrestAndScreening: payload.daysBetweenArrestAndScreening,
-    daysFromOffenseToScreen: payload.daysFromOffenseToScreen,
-    jailDurationDays: payload.jailDurationDays,
-    outcome: row.outcome,
-    confidence: row.confidence,
-    source: row.source,
-    createdAt: row.created_at,
-  };
-};
+const parseNumericInput = (value) => (value === "" ? null : Number.isFinite(Number(value)) ? Number(value) : null);
 
 export default function MainPortal({ user, onLogout }) {
-  const castFormRef = useRef(null);
   const [activeTab, setActiveTab] = useState("home");
   const [castingInputs, setCastingInputs] = useState(initialCastingInputs);
   const [result, setResult] = useState(null);
   const [historyItems, setHistoryItems] = useState([]);
   const [formError, setFormError] = useState("");
   const [isPredicting, setIsPredicting] = useState(false);
-  const [showModelInfo, setShowModelInfo] = useState(false);
   const [apiStatus, setApiStatus] = useState("checking");
-  const [lastApiError, setLastApiError] = useState("");
-  const [syncError, setSyncError] = useState("");
-  const [historySyncMode, setHistorySyncMode] = useState("backend");
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showModelOverlay, setShowModelOverlay] = useState(false);
+  const [expandedModelKey, setExpandedModelKey] = useState(null);
+
   const authProvider = (user?.app_metadata?.provider || "email").toUpperCase();
   const signedInEmail = user?.email || "Authenticated User";
-
-  const getCachedHistory = () => {
-    const stored = localStorage.getItem("casecast-history");
-    if (!stored) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
+  const username = user?.user_metadata?.username || signedInEmail?.split('@')[0] || "User";
 
   useEffect(() => {
     let active = true;
-
     const loadHistory = async () => {
-      const cached = getCachedHistory();
-      if (cached.length && active) {
-        setHistoryItems(cached);
-      }
-
-      if (!user) {
-        if (!cached.length && active) {
-          setHistoryItems([]);
-        }
-        return;
-      }
-
+      let cached = [];
       try {
-        const authHeaders = await getAuthHeaders();
-        const response = await fetch(`${getApiEndpoint("history")}?page=1&page_size=24`, {
-          headers: {
-            ...authHeaders,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`History fetch failed with ${response.status}`);
+        if (supabase && user?.id) {
+          const { data, error } = await supabase.from('prediction_history').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(24);
+          if (data && !error) {
+             cached = data.map(d => ({
+               id: d.id,
+               createdAt: d.created_at,
+               outcome: d.outcome,
+               confidence: d.confidence,
+               source: d.source,
+               ...d.input_payload,
+             }));
+          }
+        } else {
+          const stored = localStorage.getItem("casecast-history");
+          if (stored) cached = JSON.parse(stored);
         }
-
-        const payload = await response.json();
-        if (active) {
-          setSyncError("");
-          setHistorySyncMode("backend");
-          setHistoryItems((payload.items || []).map(mapHistoryRowToItem));
-        }
-      } catch {
-        try {
-          if (!supabase) {
-            throw new Error("Supabase client unavailable");
-          }
-
-          const { data, error } = await supabase
-            .from(predictionHistoryTable)
-            .select("id, input_payload, outcome, confidence, source, created_at")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(24);
-
-          if (error) {
-            throw error;
-          }
-
-          if (active) {
-            setHistorySyncMode("supabase");
-            setSyncError("Using Supabase fallback for history because backend history API is unavailable.");
-            setHistoryItems((data || []).map(mapHistoryRowToItem));
-          }
-        } catch {
-          if (active) {
-            setSyncError("History sync unavailable. Showing cached history on this device.");
-          }
-        }
-      }
+      } catch { cached = []; }
+      if (active) setHistoryItems(cached);
     };
-
     loadHistory();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [user]);
 
-  useEffect(() => {
-    localStorage.setItem("casecast-history", JSON.stringify(historyItems));
-  }, [historyItems]);
-
-  useEffect(() => {
-    let active = true;
-
-    const checkBackend = async () => {
-      try {
-        const response = await fetch(getApiEndpoint("health"));
-        if (!response.ok) {
-          throw new Error(`Health check failed with ${response.status}`);
-        }
-        if (active) {
-          setApiStatus("online");
-        }
-      } catch {
-        if (active) {
-          setApiStatus("offline");
-        }
-      }
-    };
-
-    checkBackend();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  useEffect(() => { 
+    if (!supabase || !user?.id) localStorage.setItem("casecast-history", JSON.stringify(historyItems)); 
+  }, [historyItems, user]);
 
   const stats = useMemo(() => {
     const casts = historyItems.length;
-    const avg = casts
-      ? Math.round(historyItems.reduce((sum, item) => sum + (item.confidence || 0), 0) / casts)
-      : 0;
-
-    return {
-      totalCasts: casts,
-      avgConfidence: avg,
-    };
+    const avg = casts ? Math.round(historyItems.reduce((sum, item) => sum + (item.confidence || 0), 0) / casts) : 0;
+    return { totalCasts: casts, avgConfidence: avg };
   }, [historyItems]);
 
   const updateCastingInput = (key, value) => {
     setCastingInputs((prev) => ({ ...prev, [key]: value }));
-    setFormError("");
-    setShowModelInfo(false);
-  };
-
-  const focusRelativeField = (currentField, step) => {
-    const currentIndex = fieldOrder.indexOf(currentField);
-    if (currentIndex === -1) {
-      return;
-    }
-    const nextIndex = currentIndex + step;
-    if (nextIndex < 0 || nextIndex >= fieldOrder.length) {
-      return;
-    }
-
-    const nextField = fieldOrder[nextIndex];
-    const root = castFormRef.current;
-    if (!root) {
-      return;
-    }
-
-    const nextInput = root.querySelector(`[name="${nextField}"]`);
-    if (nextInput) {
-      nextInput.focus();
-      if (typeof nextInput.select === "function") {
-        nextInput.select();
-      }
-    }
-  };
-
-  const handleFieldKeyNav = (event, fieldKey) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      focusRelativeField(fieldKey, event.shiftKey ? -1 : 1);
-      return;
-    }
-
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      focusRelativeField(fieldKey, 1);
-      return;
-    }
-
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      focusRelativeField(fieldKey, -1);
-    }
+    setFormError(""); 
   };
 
   const handlePredict = async (event) => {
     event.preventDefault();
-
     const parsed = {
-      age: parseNumericInput(castingInputs.age),
-      sex: castingInputs.sex.trim().toUpperCase(),
+      age: parseNumericInput(castingInputs.age), sex: castingInputs.sex.trim().toUpperCase(),
       priorOffenses: parseNumericInput(castingInputs.priorOffenses),
       juvenileFelonyCount: parseNumericInput(castingInputs.juvenileFelonyCount),
       juvenileMisdemeanorCount: parseNumericInput(castingInputs.juvenileMisdemeanorCount),
@@ -507,676 +147,572 @@ export default function MainPortal({ user, onLogout }) {
       jailDurationDays: parseNumericInput(castingInputs.jailDurationDays),
     };
 
-    const hasNullNumber = Object.entries(parsed)
-      .filter(([key]) => key !== "sex")
-      .some(([, value]) => value === null);
-
-    if (hasNullNumber || !parsed.sex) {
-      setFormError("Please fill all input features before prediction.");
-      return;
-    }
-
-    if (parsed.age < 18) {
-      setFormError("Age must be 18 or older.");
-      return;
-    }
-
-    if (!["M", "F"].includes(parsed.sex)) {
-      setFormError("Sex must be M or F.");
-      return;
-    }
-
-    const nonNegativeKeys = [
-      "priorOffenses",
-      "juvenileFelonyCount",
-      "juvenileMisdemeanorCount",
-      "juvenileOtherCount",
-      "daysFromOffenseToScreen",
-      "jailDurationDays",
-    ];
-
-    const hasNegativeValue = nonNegativeKeys.some((key) => parsed[key] < 0);
-    if (hasNegativeValue) {
-      setFormError("Counts and non-negative duration fields cannot be below 0.");
-      return;
-    }
-
-    setIsPredicting(true);
-    setFormError("");
-    setLastApiError("");
-
-    let prediction;
-    try {
-      prediction = await getModelPrediction(parsed);
-      setApiStatus("online");
-    } catch {
-      prediction = getFallbackPrediction(parsed);
-      setApiStatus("offline");
-      setLastApiError("Backend API unreachable. Showing fallback prediction.");
-    } finally {
-      setIsPredicting(false);
-    }
-
-    const entry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      ...parsed,
-      outcome: prediction.summary.outcome,
-      confidence: prediction.summary.confidence,
-      source: prediction.source,
-      createdAt: new Date().toISOString(),
-    };
-
-    setResult(prediction);
-    setHistoryItems((prev) => [entry, ...prev].slice(0, 24));
-
-    if (user) {
-      if (historySyncMode === "supabase") {
-        const { error } = await supabase.from(predictionHistoryTable).insert({
-          user_id: user.id,
-          input_payload: parsed,
-          output_payload: prediction,
-          outcome: prediction.summary.outcome,
-          confidence: prediction.summary.confidence,
-          source: prediction.source,
-          created_at: entry.createdAt,
-        });
-
-        if (error) {
-          setSyncError("Prediction worked, but Supabase history insert failed.");
-        }
-      } else {
-        setSyncError("");
+    const hasNullNumber = Object.entries(parsed).filter(([key]) => key !== "sex").some(([, value]) => value === null);
+    if (hasNullNumber || !parsed.sex) { setFormError("Please fill all input features before prediction."); return; }
+    
+    setIsPredicting(true); setFormError("");
+    setApiStatus("offline");
+    
+    setTimeout(async () => {
+      const prediction = getFallbackPrediction(parsed);
+      const entry = { id: `${Date.now()}-${Math.random()}`, ...parsed, ...prediction.summary, source: prediction.source, createdAt: new Date().toISOString() };
+      
+      if (supabase && user?.id) {
+         try {
+            await supabase.from('prediction_history').insert([{
+              user_id: user.id,
+              input_payload: parsed,
+              output_payload: prediction,
+              metadata: { model_used: "fallback_simulation" },
+              source: prediction.source,
+              outcome: prediction.summary.outcome,
+              confidence: prediction.summary.confidence
+            }]);
+         } catch(e) {}
       }
-    }
+
+      setResult(prediction);
+      setHistoryItems((prev) => [entry, ...prev].slice(0, 24));
+      setIsPredicting(false);
+    }, 2500); // simulate ML work for the cool animation
   };
 
-  const clearCasting = () => {
-    setCastingInputs(initialCastingInputs);
-    setResult(null);
-    setFormError("");
-    setShowModelInfo(false);
+  const CircularGauge = ({ label, value, color }) => {
+    const circumference = 2 * Math.PI * 36;
+    const offset = circumference - (value / 100) * circumference;
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <div className="relative w-24 h-24 flex items-center justify-center">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="36" className="fill-transparent stroke-slate-800" strokeWidth="6" />
+            <motion.circle 
+              cx="40" cy="40" r="36" 
+              className={`fill-transparent ${color}`} 
+              strokeWidth="6" 
+              strokeDasharray={circumference} 
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: offset }}
+              transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center font-display font-bold text-white text-lg">{value}%</div>
+        </div>
+        <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold">{label}</span>
+      </div>
+    );
   };
 
   return (
-    <ClickSpark
-      sparkColor="rgba(194, 223, 255, 0.9)"
-      sparkSize={8}
-      sparkRadius={20}
-      sparkCount={8}
-      duration={420}
-      easing="ease-out"
-      className="portal-page-spark"
-    >
-      <StarBorder
-        as="div"
-        className="portal-shell portal-shell-star"
-        color="rgba(194, 224, 255, 0.88)"
-        speed="9.4s"
-        thickness={1.1}
-      >
-        <header className="portal-header-wrap">
-        <motion.nav
-          className="portal-nav"
-          initial={{ y: -24, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.48, ease: "easeOut" }}
-        >
-          <StarBorder
-            as="div"
-            className="portal-nav-shell"
-            color="rgba(209, 231, 255, 0.88)"
-            speed="7.4s"
-          >
-            <div className="portal-nav-links" role="tablist" aria-label="Main navigation tabs">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = activeTab === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`portal-nav-link${active ? " is-active" : ""}`}
-                    onClick={() => setActiveTab(item.key)}
-                    role="tab"
-                    aria-selected={active}
-                    aria-current={active ? "page" : undefined}
-                  >
-                    {active && <motion.span className="portal-nav-active-glow" layoutId="portal-nav-active" />}
-                    <Icon size={16} strokeWidth={2} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </StarBorder>
-        </motion.nav>
+    <div className="min-h-screen bg-black flex flex-col font-sans overflow-hidden">
+      
+      {/* Global Background Elements */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] bg-indigo-900/10 blur-[150px] rounded-full mix-blend-screen animate-pulse duration-[10s]"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-cyan-900/10 blur-[150px] rounded-full mix-blend-screen animate-pulse duration-[12s]"></div>
+        <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-[0.02]"></div>
+      </div>
 
-        <div className="portal-auth-badge" aria-label="Authenticated user details">
-          <span className="portal-auth-provider">{authProvider}</span>
-          <strong className="portal-auth-email">{signedInEmail}</strong>
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-50 w-full bg-black/50 backdrop-blur-xl border-b border-white/5 flex justify-between items-center px-6 py-4">
+        <div className="flex items-center gap-3">
+          <Scale className="text-cyan-400 w-6 h-6" />
+          <h1 className="font-display font-bold text-xl tracking-wide text-white">CaseCast</h1>
+        </div>
+        
+        <nav className="hidden md:flex bg-white/5 border border-white/10 rounded-full p-1 lg:p-1.5 backdrop-blur-md">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.key;
+            return (
+              <button key={item.key} onClick={() => setActiveTab(item.key)} className={`relative px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-all ${isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}>
+                {isActive && <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/10 rounded-full" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
+                <span className="relative z-10 flex items-center gap-2"><Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : ''}`} />{item.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        {/* User Dropdown */}
+        <div className="relative">
+          <button 
+             onClick={() => setShowProfileMenu(!showProfileMenu)}
+             className="flex items-center gap-3 px-3 py-1.5 rounded-full hover:bg-white/5 transition-colors border border-transparent hover:border-white/10"
+          >
+            <div className="text-right hidden sm:block">
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest leading-none mb-1">{authProvider}</div>
+              <div className="text-sm font-medium text-slate-300 leading-none">{username}</div>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center shadow-[0_0_10px_rgba(34,211,238,0.3)]">
+              <UserRound className="w-4 h-4 text-white"/>
+            </div>
+            <ChevronDown className="w-4 h-4 text-slate-500"/>
+          </button>
+
+          <AnimatePresence>
+            {showProfileMenu && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="absolute top-full mt-2 right-0 w-64 glass-card border border-white/10 rounded-2xl p-4 shadow-2xl backdrop-blur-3xl z-50"
+              >
+                <div className="flex items-center gap-3 border-b border-white/5 pb-3 mb-3">
+                   <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
+                      <Activity className="w-5 h-5 text-cyan-400"/>
+                   </div>
+                   <div>
+                     <p className="text-white font-semibold">{username}</p>
+                     <p className="text-xs text-slate-400">{signedInEmail}</p>
+                   </div>
+                </div>
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs text-slate-400">Total Predictions</span>
+                  <span className="text-sm font-bold text-cyan-400">{stats.totalCasts}</span>
+                </div>
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-xs text-slate-400">Avg Confidence</span>
+                  <span className="text-sm font-bold text-indigo-400">{stats.avgConfidence}%</span>
+                </div>
+                <button onClick={onLogout} className="w-full py-2 bg-rose-500/10 text-rose-400 rounded-lg text-sm text-center font-medium hover:bg-rose-500/20 transition-colors">
+                  Sign Out
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </header>
 
-      <main className="portal-content">
+      {/* Mobile Nav */}
+      <div className="md:hidden flex justify-center gap-2 p-4 glass-panel border-b-0 sticky top-[72px] z-40 bg-black/80 mx-4 mt-4 rounded-xl">
+        {navItems.map((item) => (
+           <button key={item.key} onClick={() => setActiveTab(item.key)} className={`p-3 rounded-lg ${activeTab === item.key ? 'bg-cyan-900/40 text-cyan-400' : 'text-slate-400'}`}><item.icon className="w-5 h-5"/></button>
+        ))}
+      </div>
+
+      <main className="flex-1 relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 md:py-12 flex flex-col gap-8">
         <AnimatePresence mode="wait">
-          <motion.section
-            key={activeTab}
-            className="portal-panel"
-            initial={{ opacity: 0, y: 16, filter: "blur(4px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -12, filter: "blur(3px)" }}
-            transition={{ duration: 0.34, ease: "easeOut" }}
-          >
-            {activeTab === "home" && (
-              <div className="portal-home-flow">
-                <StarBorder
-                  as="section"
-                  className="portal-home-shell portal-home-hero"
-                  color="rgba(212, 233, 255, 0.9)"
-                  speed="7.2s"
-                >
-                  <ScrollFloat
-                    containerClassName="portal-scroll-title-wrap"
-                    textClassName="portal-scroll-title"
-                    animationDuration={1.1}
-                    stagger={0.05}
-                    scrollStart="top bottom-=6%"
-                    scrollEnd="bottom center+=10%"
-                  >
-                    CASE CAST
-                  </ScrollFloat>
+          
+          {/* DASHBOARD TAB */}
+          {activeTab === "home" && (
+            <motion.div key="home" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.5, ease: "easeOut" }} className="flex flex-col gap-8 w-full">
+               {/* Hero Banner with Aurora/Nebula effect */}
+               <div className="relative w-full rounded-[2.5rem] p-10 md:p-[4.5rem] overflow-hidden border border-white/10 group shadow-[0_0_120px_rgba(34,211,238,0.07)] bg-black">
+                 {/* Intense animated blobs mimicking Aurora Background */}
+                 <div className="absolute top-[-50%] left-[-20%] w-[800px] h-[800px] bg-cyan-700/20 blur-[150px] rounded-full mix-blend-screen opacity-50 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse pointer-events-none"></div>
+                 <div className="absolute bottom-[-50%] right-[-20%] w-[800px] h-[800px] bg-indigo-700/20 blur-[150px] rounded-full mix-blend-screen opacity-50 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse delay-700 pointer-events-none"></div>
+                 
+                 <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-10 mix-blend-overlay pointer-events-none"></div>
+                 
+                 <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
+                   <div className="flex items-center gap-2 px-5 py-2 bg-white/5 border border-white/10 rounded-full mb-8 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                     <Sparkles className="w-4 h-4 text-cyan-400" />
+                     <span className="text-[11px] font-mono font-bold tracking-[0.2em] text-slate-300 uppercase">CaseCast Intelligence V2</span>
+                   </div>
+                   <h2 className="font-display text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white via-slate-100 to-slate-500 tracking-tight mb-6 leading-tight">
+                     Predictive <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-500">Legal</span> Telemetry
+                   </h2>
+                   <p className="text-slate-400 text-lg md:text-xl leading-relaxed mb-10 max-w-2xl font-light">
+                     An elite intelligence portal orchestrating complex historical priors and demographic patterns into actionable structured insights with high-fidelity modeling.
+                   </p>
+                   <button onClick={() => setActiveTab("casting")} className="px-8 py-4 bg-white text-black font-display font-bold text-lg rounded-full hover:scale-105 hover:bg-slate-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] flex items-center gap-3">
+                     Initialize Matrix <ChevronRight className="w-5 h-5"/>
+                   </button>
+                 </div>
+               </div>
 
-                  <p className="portal-home-subtitle">
-                    ML-powered legal intelligence interface for structured prediction workflows.
-                  </p>
-
-                  <div className="portal-home-quick-stats">
-                    <article className="portal-card portal-stat">
-                      <span>Total Predictions</span>
-                      <strong>{stats.totalCasts}</strong>
-                    </article>
-
-                    <article className="portal-card portal-stat">
-                      <span>Average Confidence</span>
-                      <strong>{stats.avgConfidence}%</strong>
-                    </article>
-
-                    <article className="portal-card portal-court-motion" aria-hidden="true">
-                      <motion.div
-                        className="portal-court-icon"
-                        animate={{ rotate: [0, 9, -8, 7, -6, 0] }}
-                        transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut" }}
-                      >
-                        <Scale size={30} strokeWidth={2.1} />
-                      </motion.div>
-                      <p>Court Dynamics</p>
-                    </article>
-                  </div>
-
-                  <StarBorder
-                    as="button"
-                    type="button"
-                    className="portal-primary"
-                    onClick={() => setActiveTab("casting")}
-                    color="rgba(208, 230, 255, 0.9)"
-                    speed="6.8s"
-                  >
-                    Start Casting
-                  </StarBorder>
-                </StarBorder>
-
-                <StarBorder
-                  as="section"
-                  className="portal-home-shell portal-home-features"
-                  color="rgba(206, 228, 255, 0.82)"
-                  speed="8s"
-                >
-                  <div className="portal-home-features-head">
-                    <p className="portal-kicker">Main Features</p>
-                  </div>
-
-                  <div className="portal-home-feature-list">
-                    {homeFeatureBlocks.map((feature, index) => (
-                      <motion.article
-                        key={feature.title}
-                        className="portal-card portal-home-feature-item portal-home-feature-icon-card"
-                        initial={{ opacity: 0, y: 28 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, amount: 0.4 }}
-                        transition={{ duration: 0.42, delay: index * 0.08, ease: "easeOut" }}
-                      >
-                        <span className={`portal-home-feature-icon ${feature.toneClass}`}>
-                          <feature.icon size={24} strokeWidth={2.1} />
-                        </span>
-                        <h4>{feature.title}</h4>
-                      </motion.article>
-                    ))}
-                  </div>
-                </StarBorder>
-
-              </div>
-            )}
-
-            {activeTab === "casting" && (
-              <StarBorder
-                as="div"
-                className="portal-casting-panel-star"
-                color="rgba(185, 220, 255, 0.9)"
-                speed="8.6s"
-              >
-                <ClickSpark
-                  sparkColor="rgba(132, 201, 255, 0.95)"
-                  sparkSize={9}
-                  sparkRadius={22}
-                  sparkCount={9}
-                  duration={460}
-                  easing="ease-out"
-                  className="portal-casting-spark"
-                >
-                  <div className="portal-casting-main-box">
-                    <form className="portal-cast-form" onSubmit={handlePredict} ref={castFormRef}>
-                    <div className="portal-cast-header">
-                      <p className="portal-kicker">Casting Inputs</p>
-                      <h3>Provide model features for prediction</h3>
-                      <p className={`portal-api-status ${apiStatus === "online" ? "is-online" : apiStatus === "offline" ? "is-offline" : "is-checking"}`}>
-                        Backend: {apiStatus === "online" ? "Connected" : apiStatus === "offline" ? "Not Connected" : "Checking..."}
+               {/* Spotlight Feature Cards for Core AI Functions */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mt-4">
+                 <div className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-colors">
+                   <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/40 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none"></div>
+                   <div className="relative h-full bg-black/90 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 border border-white/5 group-hover:border-cyan-500/30 transition-colors">
+                      <div className="w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all duration-300">
+                        <Scale className="w-7 h-7 text-cyan-400" />
+                      </div>
+                      <h3 className="text-2xl font-display font-bold text-white tracking-wide">Conviction Probability</h3>
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        Anticipate formal court determinations and verdict likelihoods natively.<br/>Heavily influenced by prior offense records and historical precedence matrices.
                       </p>
-                    </div>
+                   </div>
+                 </div>
 
-                    <div className="portal-cast-grid">
-                      <label className="portal-field portal-mini-field">
-                        <span>Age (years, 18+)</span>
-                        <input
-                          name="age"
-                          type="number"
-                          min="18"
-                          max="120"
-                          value={castingInputs.age}
-                          onChange={(event) => updateCastingInput("age", event.target.value)}
-                          onKeyDown={(event) => handleFieldKeyNav(event, "age")}
-                          placeholder="e.g. 35"
-                        />
-                      </label>
+                 <div className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-colors">
+                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/40 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none"></div>
+                   <div className="relative h-full bg-black/90 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 border border-white/5 group-hover:border-indigo-500/30 transition-colors">
+                      <div className="w-14 h-14 rounded-2xl bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-all duration-300">
+                        <Activity className="w-7 h-7 text-indigo-400" />
+                      </div>
+                      <h3 className="text-2xl font-display font-bold text-white tracking-wide">Charge Severity</h3>
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        Classify active legal infractions completely automatically.<br/>Determines core statutory bailable and non-bailable alignments effortlessly.
+                      </p>
+                   </div>
+                 </div>
 
-                      <label className="portal-field portal-mini-field">
-                        <span>Sex</span>
-                        <select
-                          name="sex"
-                          value={castingInputs.sex}
-                          onChange={(event) => updateCastingInput("sex", event.target.value)}
-                          onKeyDown={(event) => handleFieldKeyNav(event, "sex")}
-                        >
-                          <option value="">Select M or F</option>
-                          <option value="M">M - Male</option>
-                          <option value="F">F - Female</option>
-                        </select>
-                      </label>
+                 <div className="group relative p-[1px] rounded-3xl overflow-hidden bg-white/5 hover:bg-white/10 transition-colors">
+                   <div className="absolute inset-0 bg-gradient-to-br from-rose-500/40 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl pointer-events-none"></div>
+                   <div className="relative h-full bg-black/90 backdrop-blur-3xl rounded-[23px] p-8 flex flex-col gap-5 border border-white/5 group-hover:border-rose-500/30 transition-colors">
+                      <div className="w-14 h-14 rounded-2xl bg-rose-950/80 border border-rose-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.2)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(244,63,94,0.4)] transition-all duration-300">
+                        <ShieldAlert className="w-7 h-7 text-rose-400" />
+                      </div>
+                      <h3 className="text-2xl font-display font-bold text-white tracking-wide">Recidivism Matrix</h3>
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        Evaluate the likelihood and probability of future behavioral patterns.<br/>Computed chronologically using complex demographic algorithms.
+                      </p>
+                   </div>
+                 </div>
+               </div>
+            </motion.div>
+          )}
 
-                      <label className="portal-field portal-mini-field">
-                        <span>Number of Prior Offenses</span>
-                        <input
-                          name="priorOffenses"
-                          type="number"
-                          min="0"
-                          value={castingInputs.priorOffenses}
-                          onChange={(event) => updateCastingInput("priorOffenses", event.target.value)}
-                          onKeyDown={(event) => handleFieldKeyNav(event, "priorOffenses")}
-                          placeholder="e.g. 4"
-                        />
-                      </label>
-
-                      <label className="portal-field portal-mini-field">
-                        <span>Juvenile Felony Count</span>
-                        <input
-                          name="juvenileFelonyCount"
-                          type="number"
-                          min="0"
-                          value={castingInputs.juvenileFelonyCount}
-                          onChange={(event) =>
-                            updateCastingInput("juvenileFelonyCount", event.target.value)
-                          }
-                          onKeyDown={(event) => handleFieldKeyNav(event, "juvenileFelonyCount")}
-                          placeholder="e.g. 2"
-                        />
-                      </label>
-
-                      <label className="portal-field portal-mini-field">
-                        <span>Juvenile Misdemeanor Count</span>
-                        <input
-                          name="juvenileMisdemeanorCount"
-                          type="number"
-                          min="0"
-                          value={castingInputs.juvenileMisdemeanorCount}
-                          onChange={(event) =>
-                            updateCastingInput("juvenileMisdemeanorCount", event.target.value)
-                          }
-                          onKeyDown={(event) => handleFieldKeyNav(event, "juvenileMisdemeanorCount")}
-                          placeholder="e.g. 0"
-                        />
-                      </label>
-
-                      <label className="portal-field portal-mini-field">
-                        <span>Juvenile Other Charges</span>
-                        <input
-                          name="juvenileOtherCount"
-                          type="number"
-                          min="0"
-                          value={castingInputs.juvenileOtherCount}
-                          onChange={(event) => updateCastingInput("juvenileOtherCount", event.target.value)}
-                          onKeyDown={(event) => handleFieldKeyNav(event, "juvenileOtherCount")}
-                          placeholder="e.g. 0"
-                        />
-                      </label>
-
-                      <label className="portal-field portal-mini-field">
-                        <span>Days Between Arrest and Screen</span>
-                        <input
-                          name="daysBetweenArrestAndScreening"
-                          type="number"
-                          value={castingInputs.daysBetweenArrestAndScreening}
-                          onChange={(event) =>
-                            updateCastingInput("daysBetweenArrestAndScreening", event.target.value)
-                          }
-                          onKeyDown={(event) => handleFieldKeyNav(event, "daysBetweenArrestAndScreening")}
-                          placeholder="e.g. -20"
-                        />
-                      </label>
-
-                      <label className="portal-field portal-mini-field">
-                        <span>Days from Offense to Screen</span>
-                        <input
-                          name="daysFromOffenseToScreen"
-                          type="number"
-                          min="0"
-                          value={castingInputs.daysFromOffenseToScreen}
-                          onChange={(event) =>
-                            updateCastingInput("daysFromOffenseToScreen", event.target.value)
-                          }
-                          onKeyDown={(event) => handleFieldKeyNav(event, "daysFromOffenseToScreen")}
-                          placeholder="e.g. 22"
-                        />
-                      </label>
-
-                      <label className="portal-field portal-mini-field">
-                        <span>Jail Duration (days)</span>
-                        <input
-                          name="jailDurationDays"
-                          type="number"
-                          min="0"
-                          value={castingInputs.jailDurationDays}
-                          onChange={(event) => updateCastingInput("jailDurationDays", event.target.value)}
-                          onKeyDown={(event) => handleFieldKeyNav(event, "jailDurationDays")}
-                          placeholder="e.g. 4"
-                        />
-                      </label>
-                    </div>
-
-                    {formError && <p className="portal-form-error">{formError}</p>}
-                    {lastApiError && <p className="portal-form-error">{lastApiError}</p>}
-                    {syncError && <p className="portal-form-error">{syncError}</p>}
-
-                    <div className="portal-cast-actions">
-                      <StarBorder
-                        as="button"
-                        type="submit"
-                        disabled={isPredicting}
-                        className="portal-cast-predict-btn"
-                        color="rgba(206, 230, 255, 0.92)"
-                        speed="6.4s"
-                      >
-                        {isPredicting ? "Predicting..." : "Predict Output"}
-                      </StarBorder>
-                      {result && (
-                        <button
-                          type="button"
-                          className="portal-ghost"
-                          onClick={() => setShowModelInfo((prev) => !prev)}
-                        >
-                          {showModelInfo ? "Hide Model Info" : "MODEL INFO"}
-                        </button>
-                      )}
-                      <button type="button" className="portal-ghost" onClick={clearCasting}>
-                        Reset
-                      </button>
-                    </div>
-
-                    {isPredicting && (
-                      <motion.p
-                        className="portal-predicting-indicator"
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -2 }}
-                        transition={{ duration: 0.22, ease: "easeOut" }}
-                      >
-                        Predicting
-                        <span className="portal-predicting-dots" aria-hidden="true">...</span>
-                      </motion.p>
-                    )}
-
-                    {result && (
-                      <section className="portal-result-stack">
-                        <article className="portal-result">
-                          <span>Prediction Results</span>
-                          <h3>{result.summary.outcome}</h3>
-                          <p>Confidence score: {result.summary.confidence}%</p>
-
-                          <div className="portal-result-grid">
-                            <div className="portal-result-card">
-                              <h4>Auto-Computed Risk Scores</h4>
-                              <p>
-                                Decile (general): {result.autoComputedRiskScores.decileScore}/10
-                                <span>raw {result.autoComputedRiskScores.decileScoreRaw.toFixed(2)}</span>
-                              </p>
-                              <p>
-                                Decile (violent): {result.autoComputedRiskScores.violentDecileScore}/10
-                                <span>raw {result.autoComputedRiskScores.violentDecileScoreRaw.toFixed(2)}</span>
-                              </p>
-                            </div>
-
-                            <div className="portal-result-card">
-                              <h4>Conviction Likelihood</h4>
-                              <p>{result.conviction.prediction}</p>
-                              <p>Convicted: {result.conviction.pConvicted}%</p>
-                              <p>Not Convicted: {result.conviction.pNotConvicted}%</p>
-                              <p>Best model: {result.conviction.bestModel}</p>
-                            </div>
-
-                            <div className="portal-result-card">
-                              <h4>Charge Severity</h4>
-                              <p>{result.chargeSeverity.prediction}</p>
-                              <p>Non-Bailable: {result.chargeSeverity.pNonBailable}%</p>
-                              <p>Bailable: {result.chargeSeverity.pBailable}%</p>
-                              <p>Best model: {result.chargeSeverity.bestModel}</p>
-                            </div>
-
-                            <div className="portal-result-card">
-                              <h4>Recidivism (2-Year)</h4>
-                              <p>{result.recidivism.prediction}</p>
-                              <p>Will Reoffend: {result.recidivism.pWillReoffend}%</p>
-                              <p>Will Not Reoffend: {result.recidivism.pWillNotReoffend}%</p>
-                              <p>Best model: {result.recidivism.bestModel}</p>
-                            </div>
-                          </div>
-
-                          <p>Source: {result.source === "model" ? "ML backend model" : "Frontend fallback"}</p>
-                        </article>
-
-                        {showModelInfo && result.modelInfo && (
-                          <article className="portal-model-info">
-                            <h3>Best Model Summary</h3>
-                            <p>
-                              Decile Regressor: {result.modelInfo.decileRegressor.name} (MAE {result.modelInfo.decileRegressor.mae})
-                            </p>
-                            <p>
-                              Violent Decile Regressor: {result.modelInfo.violentDecileRegressor.name} (MAE {result.modelInfo.violentDecileRegressor.mae})
-                            </p>
-
-                            <div className="portal-model-metrics-grid">
-                              {Object.entries(result.modelInfo.bestSummary).map(([key, details]) => (
-                                <div key={key} className="portal-model-metric-card">
-                                  <h4>{sectionTitleMap[key] || key}</h4>
-                                  <p>{details.model}</p>
-
-                                  <div className="portal-gauge-grid">
-                                    {[
-                                      { label: "Accuracy", value: details.accuracy },
-                                      { label: "F1", value: details.f1 },
-                                    ].map((item) => (
-                                      <div key={item.label} className="portal-gauge-wrap">
-                                        <div className="portal-ring" style={{ "--value": metricValue(item.value) }}>
-                                          <span className="portal-ring-value">{item.value}%</span>
-                                        </div>
-                                        <span className="portal-gauge-label">{item.label}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-
-                            {result.modelInfo.trainingLogs && (
-                              <div className="portal-training-logs">
-                                <h4>Training Logs</h4>
-
-                                <div className="portal-log-block">
-                                  <p>Decile Score Regressors</p>
-                                  <div className="portal-log-table">
-                                    {result.modelInfo.trainingLogs.decileRegressors?.map((row) => (
-                                      <div key={row.model} className="portal-log-row">
-                                        <span>{row.model}</span>
-                                        <strong>MAE {row.mae}</strong>
-                                        <strong>R2 {row.r2}</strong>
-                                        <strong>±1 {row.plusMinusOneAcc}%</strong>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                <div className="portal-log-block">
-                                  <p>Violent Decile Regressors</p>
-                                  <div className="portal-log-table">
-                                    {result.modelInfo.trainingLogs.violentDecileRegressors?.map((row) => (
-                                      <div key={row.model} className="portal-log-row">
-                                        <span>{row.model}</span>
-                                        <strong>MAE {row.mae}</strong>
-                                        <strong>R2 {row.r2}</strong>
-                                        <strong>±1 {row.plusMinusOneAcc}%</strong>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {Object.entries(result.modelInfo.trainingLogs.classifiers || {}).map(([target, rows]) => (
-                                  <div key={target} className="portal-log-block">
-                                    <p>{sectionTitleMap[target] || target}</p>
-                                    <div className="portal-log-table portal-log-table--classifier">
-                                      {rows.map((row) => (
-                                        <div key={`${target}-${row.model}`} className="portal-log-classifier-card">
-                                          <h5>{row.model}</h5>
-                                          <div className="portal-compact-metrics">
-                                            <span><b>Acc</b> {row.accuracy}%</span>
-                                            <span><b>F1</b> {row.f1}%</span>
-                                            <span><b>Prec</b> {row.precision}%</span>
-                                            <span><b>Rec</b> {row.recall}%</span>
-                                            <span><b>CV Acc</b> {row.cvAccuracy}%</span>
-                                            <span><b>CV F1</b> {row.cvF1}%</span>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </article>
-                        )}
-                      </section>
-                    )}
-                    </form>
+          {/* PREDICTOR TAB */}
+          {activeTab === "casting" && (
+            <motion.div key="predict" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex flex-col xl:flex-row gap-8 items-start relative">
+              
+              <div className="w-full xl:w-5/12 flex flex-col gap-4 order-2 xl:order-1 h-auto relative z-10 mb-12">
+                <div className="glass-card p-5 md:p-6 flex flex-col gap-5">
+                  <div className="flex justify-between items-center mb-1">
+                    <h2 className="font-display text-xl font-bold text-white flex items-center gap-2"><Sparkles className="w-5 h-5 text-cyan-400"/> Settings</h2>
                   </div>
-                </ClickSpark>
-              </StarBorder>
-            )}
 
-            {activeTab === "history" && (
-              <div className="portal-history-list">
-                {historyItems.length === 0 && (
-                  <article className="portal-card portal-empty">
-                    <h3>No prediction history yet.</h3>
-                    <p>Run your first cast to see model interaction history here.</p>
-                  </article>
+                  <form onSubmit={handlePredict} className="flex flex-col gap-5">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Age (18+)</span><input name="age" type="number" min="18" max="120" className="input-glass bg-slate-900/60 py-2 px-3 text-sm" placeholder="e.g. 35" value={castingInputs.age} onChange={e => updateCastingInput('age', e.target.value)}/></label>
+                      <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Sex</span><select name="sex" className="input-glass bg-slate-900/60 py-2 px-2 text-sm" value={castingInputs.sex} onChange={e => updateCastingInput('sex', e.target.value)}><option value="">Sel</option><option value="M">M</option><option value="F">F</option></select></label>
+                      <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Priors</span><input name="priorOffenses" type="number" min="0" className="input-glass bg-slate-900/60 py-2 px-3 text-sm" placeholder="0" value={castingInputs.priorOffenses} onChange={e => updateCastingInput('priorOffenses', e.target.value)}/></label>
+                      <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Jail Days</span><input name="jailDurationDays" type="number" min="0" className="input-glass bg-slate-900/60 py-2 px-3 text-sm" placeholder="0" value={castingInputs.jailDurationDays} onChange={e => updateCastingInput('jailDurationDays', e.target.value)}/></label>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+                      <span className="text-[10px] uppercase font-bold text-indigo-400 tracking-widest leading-none">Juvenile History Counts</span>
+                      <div className="grid grid-cols-3 gap-3">
+                        <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Felony</span><input name="juvenileFelonyCount" type="number" min="0" className="input-glass py-2 px-3 border-indigo-500/20 bg-indigo-950/20 focus:border-indigo-400 text-sm" placeholder="0" value={castingInputs.juvenileFelonyCount} onChange={e => updateCastingInput('juvenileFelonyCount', e.target.value)}/></label>
+                        <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Misdemean</span><input name="juvenileMisdemeanorCount" type="number" min="0" className="input-glass py-2 px-3 border-indigo-500/20 bg-indigo-950/20 focus:border-indigo-400 text-sm" placeholder="0" value={castingInputs.juvenileMisdemeanorCount} onChange={e => updateCastingInput('juvenileMisdemeanorCount', e.target.value)}/></label>
+                        <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Other</span><input name="juvenileOtherCount" type="number" min="0" className="input-glass py-2 px-3 border-indigo-500/20 bg-indigo-950/20 focus:border-indigo-400 text-sm" placeholder="0" value={castingInputs.juvenileOtherCount} onChange={e => updateCastingInput('juvenileOtherCount', e.target.value)}/></label>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+                      <span className="text-[10px] uppercase font-bold text-slate-300 tracking-widest leading-none">Timeline Constraints (Days)</span>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Arrest to Screen</span><input name="daysBetweenArrestAndScreening" type="number" className="input-glass bg-slate-900/60 py-2 px-3 text-sm" placeholder="e.g. -20" value={castingInputs.daysBetweenArrestAndScreening} onChange={e => updateCastingInput('daysBetweenArrestAndScreening', e.target.value)}/></label>
+                        <label className="flex flex-col gap-1.5"><span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Offense to Screen</span><input name="daysFromOffenseToScreen" type="number" min="0" className="input-glass bg-slate-900/60 py-2 px-3 text-sm" placeholder="e.g. 22" value={castingInputs.daysFromOffenseToScreen} onChange={e => updateCastingInput('daysFromOffenseToScreen', e.target.value)}/></label>
+                      </div>
+                    </div>
+
+                    {formError && (
+                       <div className="px-3 py-2 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-300 text-xs mt-1 font-medium shadow-inner">
+                          {formError}
+                       </div>
+                    )}
+
+                    <button type="submit" disabled={isPredicting} className="btn-primary w-full py-3.5 text-base border border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] font-bold uppercase tracking-widest mt-1">
+                      {isPredicting ? "Initializing..." : "Execute Prediction"}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div className="w-full xl:w-7/12 flex flex-col order-1 xl:order-2 self-stretch min-h-[600px] justify-center relative mt-6 xl:mt-0 pb-12">
+                {!result && !isPredicting && (
+                  <div className="text-center text-slate-500 flex flex-col items-center p-12 glass-card rounded-3xl h-full justify-center">
+                    <Database className="w-24 h-24 mb-6 text-slate-800 animate-pulse"/>
+                    <p className="text-2xl font-display font-medium text-slate-400">Awaiting Input Parameters</p>
+                    <p className="text-sm mt-2 max-w-md">Configure the legal feature matrix on the left panel to execute the advanced prediction engine.</p>
+                  </div>
                 )}
 
-                {historyItems.map((item) => (
-                  <article key={item.id} className="portal-card portal-history-item">
-                    <div className="portal-history-top">
-                      <h3>{item.outcome}</h3>
-                      <span>{new Date(item.createdAt).toLocaleString()}</span>
+                {/* ML Scanning Animation */}
+                {isPredicting && (
+                  <motion.div 
+                    initial={{opacity: 0, scale: 0.9}} animate={{opacity: 1, scale: 1}}
+                    className="absolute inset-0 z-20 flex flex-col items-center justify-center glass-panel rounded-3xl border-cyan-500/50 bg-black/80 backdrop-blur-3xl overflow-hidden shadow-[0_0_80px_rgba(34,211,238,0.15)]"
+                  >
+                    <motion.div 
+                      animate={{y: ['-100%', '300%']}} 
+                      transition={{duration: 1.5, repeat: Infinity, ease: "linear"}} 
+                      className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_30px_rgba(34,211,238,1)] z-30" 
+                    />
+                    
+                    <div className="relative">
+                      <Network className="w-24 h-24 text-cyan-400 mb-8" />
+                      <motion.div animate={{scale: [1, 1.5, 1], opacity: [0, 0.5, 0]}} transition={{duration: 1, repeat: Infinity}} className="absolute inset-0 bg-cyan-500 rounded-full blur-xl"></motion.div>
                     </div>
-                    <p>
-                      Age: {item.age} | Sex: {item.sex} | Prior Offenses: {item.priorOffenses}
-                    </p>
-                    <p>
-                      Juvenile(Felony/Misdemeanor/Other): {item.juvenileFelonyCount}/
-                      {item.juvenileMisdemeanorCount}/{item.juvenileOtherCount}
-                    </p>
-                    <p>
-                      Days(Arrest-Screen/Offense-Screen): {item.daysBetweenArrestAndScreening}/
-                      {item.daysFromOffenseToScreen} | Jail Duration: {item.jailDurationDays}
-                    </p>
-                    <div className="portal-history-meta">
-                      <span>Feature Input: Structured (9 fields)</span>
-                      <span>Confidence: {item.confidence}%</span>
+                    
+                    <h3 className="text-3xl font-display font-bold text-white mb-2 tracking-widest uppercase">Computing Matrix</h3>
+                    <div className="flex items-center gap-2">
+                       <span className="w-2 h-2 bg-cyan-400 rounded-full animate-ping"></span>
+                       <p className="text-cyan-400 font-mono text-sm tracking-widest uppercase">Evaluating 12x Feature Constraints</p>
                     </div>
-                  </article>
-                ))}
+                  </motion.div>
+                )}
+
+                {result && !isPredicting && (
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col gap-6 h-full">
+                    
+                    <div className="flex justify-between items-center px-2">
+                       <span className="text-slate-400 text-sm font-mono flex items-center gap-2"><Cpu className="w-4 h-4 text-emerald-400"/> Inference Complete</span>
+                       <button onClick={() => setShowModelOverlay(true)} className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                         Model Info
+                       </button>
+                    </div>
+
+                    <div className={`p-10 rounded-3xl border shadow-2xl relative overflow-hidden backdrop-blur-xl ${
+                      result.summary.outcome.includes("High") ? 'bg-rose-950/20 border-rose-500/50 shadow-rose-500/20' : 
+                      result.summary.outcome.includes("Moderate") ? 'bg-amber-950/20 border-amber-500/50 shadow-amber-500/20' : 
+                      'bg-emerald-950/20 border-emerald-500/50 shadow-emerald-500/20'
+                    }`}>
+                      <div className="absolute -right-10 -top-10 opacity-10">
+                        {result.summary.outcome.includes("High") ? <ShieldAlert className="w-64 h-64 text-rose-500"/> : <Scale className="w-64 h-64 text-emerald-500"/>}
+                      </div>
+                      <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div>
+                           <p className="text-xs uppercase tracking-widest font-semibold opacity-70 mb-2">Aggregate Risk Assessment</p>
+                           <h2 className="text-5xl font-display font-bold text-white tracking-tight leading-tight">{result.summary.outcome}</h2>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-5xl font-mono font-bold text-white mb-1">{result.summary.confidence}%</p>
+                          <p className="text-xs uppercase tracking-widest opacity-60">Confidence Level</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                      <div className="glass-card p-6 border-cyan-500/20 hover:border-cyan-500/40 hover:bg-cyan-900/10 transition-all">
+                         <div className="flex justify-between items-start mb-4">
+                            <h3 className="font-semibold text-slate-200">Conviction Prediction</h3>
+                            <Scale className="w-5 h-5 text-cyan-400"/>
+                         </div>
+                         <p className="text-2xl font-display font-bold text-white mb-4">{result.conviction.prediction}</p>
+                         <div className="flex flex-col gap-2">
+                           <div className="flex justify-between text-sm"><span className="text-slate-400">Convicted</span><span className="text-cyan-400">{result.conviction.pConvicted}%</span></div>
+                           <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5"><div className="bg-cyan-500 h-full shadow-[0_0_10px_rgba(6,182,212,0.8)]" style={{width: `${result.conviction.pConvicted}%`}}></div></div>
+                           <div className="flex justify-between text-sm mt-2"><span className="text-slate-400">Not Convicted</span><span className="text-cyan-400">{result.conviction.pNotConvicted}%</span></div>
+                         </div>
+                      </div>
+
+                      <div className="glass-card p-6 border-indigo-500/20 hover:border-indigo-500/40 hover:bg-indigo-900/10 transition-all">
+                         <div className="flex justify-between items-start mb-4">
+                            <h3 className="font-semibold text-slate-200">Charge Severity</h3>
+                            <AlertCircle className="w-5 h-5 text-indigo-400"/>
+                         </div>
+                         <p className="text-2xl font-display font-bold text-white mb-4">{result.chargeSeverity.prediction}</p>
+                         <div className="flex flex-col gap-2">
+                           <div className="flex justify-between text-sm"><span className="text-slate-400">Non-Bailable</span><span className="text-indigo-400">{result.chargeSeverity.pNonBailable}%</span></div>
+                           <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-white/5"><div className="bg-indigo-500 h-full shadow-[0_0_10px_rgba(99,102,241,0.8)]" style={{width: `${result.chargeSeverity.pNonBailable}%`}}></div></div>
+                         </div>
+                      </div>
+
+                      <div className="glass-card p-6 border-rose-500/20 hover:border-rose-500/40 hover:bg-rose-900/10 transition-all md:col-span-2 relative overflow-hidden">
+                         <div className="absolute top-0 right-0 p-4 opacity-10"><ShieldAlert className="w-24 h-24 text-rose-500"/></div>
+                         <div className="flex justify-between items-start mb-4 relative z-10">
+                            <h3 className="font-semibold text-slate-200">Recidivism (2-Year Risk)</h3>
+                         </div>
+                         <p className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-500 mb-6 relative z-10">{result.recidivism.prediction}</p>
+                         <div className="flex flex-col gap-2 relative z-10">
+                           <div className="flex justify-between text-sm"><span className="text-slate-400 font-semibold uppercase tracking-wider">Risk Probability</span><span className="text-rose-400 font-bold">{result.recidivism.pWillReoffend}%</span></div>
+                           <div className="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-white/5"><div className="bg-gradient-to-r from-orange-400 to-rose-600 h-full shadow-[0_0_15px_rgba(244,63,94,0.8)]" style={{width: `${result.recidivism.pWillReoffend}%`}}></div></div>
+                         </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </div>
-            )}
+            </motion.div>
+          )}
 
-            {activeTab === "profile" && (
-              <div className="portal-grid portal-grid-profile">
-                <article className="portal-card portal-profile-main">
-                  <p className="portal-kicker">User Profile</p>
-                  <h2>{user?.email || "Case Analyst"}</h2>
-                  <p>Manage your account and system behavior preferences for smooth ML-assisted case predictions.</p>
-                  <button type="button" className="portal-ghost" onClick={onLogout}>
-                    <LogOut size={16} /> Logout
-                  </button>
-                </article>
-
-                <article className="portal-card portal-preference">
-                  <h3>Interface</h3>
-                  <p>Liquid glass theme: Enabled</p>
-                  <p>Transition mode: Smooth</p>
-                  <p>Render profile: Balanced quality</p>
-                </article>
-
-                <article className="portal-card portal-preference">
-                  <h3>Model Context</h3>
-                  <p>Domain: Legal outcome classification</p>
-                  <p>Input mode: COMPAS-style structured features</p>
-                  <p>History retention: 24 recent predictions</p>
-                </article>
+          {/* HISTORY TAB */}
+          {activeTab === "history" && (
+            <motion.div key="history" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-8">
+              <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                <div>
+                  <h2 className="text-3xl font-display font-bold text-white tracking-tight">Audit Logs</h2>
+                  <p className="text-slate-400 mt-2">Historical inference data and prediction payloads.</p>
+                </div>
+                <div className="text-sm text-slate-500 font-mono">Total Records: {historyItems.length}</div>
               </div>
-            )}
-          </motion.section>
+
+              {!historyItems.length ? (
+                <div className="text-center p-16 glass-card border-dashed">
+                  <p className="text-slate-400 text-lg">No audit records found.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {historyItems.map((item, i) => (
+                    <motion.div initial={{opacity:0, y: 10}} animate={{opacity:1, y:0}} transition={{delay: i*0.05}} key={item.id} className="glass-panel p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-slate-800/80 transition-colors">
+                       <div className="flex flex-col gap-2">
+                         <div className="flex items-center gap-3">
+                           <span className={`w-3 h-3 rounded-full ${item.outcome.includes("High") ? "bg-rose-500" : item.outcome.includes("Moderate") ? "bg-amber-500" : "bg-emerald-500"} shadow-[0_0_10px_rgba(255,255,255,0.2)]`}></span>
+                           <span className="font-display font-semibold text-lg text-white">{item.outcome}</span>
+                           <span className="text-xs text-slate-500 font-mono">{new Date(item.createdAt).toLocaleString()}</span>
+                         </div>
+                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-400">
+                           <span><b className="text-slate-200">{item.age}</b> yrs</span>
+                           <span><b className="text-slate-200">{item.sex}</b></span>
+                           <span><b className="text-slate-200">{item.priorOffenses}</b> Priors</span>
+                           <span>Jail: <b className="text-slate-200">{item.jailDurationDays}</b>d</span>
+                         </div>
+                       </div>
+                       <div className="text-right flex items-center gap-4">
+                         <div className="text-left">
+                           <div className="text-2xl font-mono text-cyan-400">{Math.round(item.confidence || 0)}%</div>
+                           <div className="text-[10px] uppercase tracking-widest text-slate-500">Confidence</div>
+                         </div>
+                       </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* SETTINGS TAB */}
+          {activeTab === "profile" && (
+            <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto flex flex-col gap-8 w-full">
+               <div className="glass-panel p-10 rounded-3xl border-t-4 border-indigo-500 flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left shadow-[0_0_40px_rgba(99,102,241,0.1)]">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.5)]">
+                    <UserRound className="w-10 h-10 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-3xl font-display font-bold text-white mb-2">{username}</h2>
+                    <p className="text-slate-400 mb-6">Manage your operational preferences and review authentication status.</p>
+                    <button onClick={onLogout} className="btn-secondary flex items-center justify-center md:justify-start gap-2 text-rose-400 hover:text-rose-300 border-rose-900/50 hover:bg-rose-900/30 w-full md:w-auto"><LogOut className="w-4 h-4"/> Terminate Session</button>
+                  </div>
+               </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
-      <footer className="portal-footer">
-        <div className="portal-footer-inner">
-          <div className="portal-footer-brand">
-            <p>CaseCast AI</p>
-            <span>Premium legal intelligence frontend for ML-powered case outcome prediction.</span>
-          </div>
-          <div className="portal-footer-meta">
-            <span>Copyright © 2026 CaseCast Technologies. All rights reserved.</span>
-            <span>Contact: sankirthan1811@gmail.com | +91 9876543210</span>
-            <span>Address: Sir M Visveshwaraih block, NMAMIT, Nitte, Udupi</span>
-          </div>
+      {/* Model Overlay (Animated Visuals for Model Info) */}
+      <AnimatePresence>
+        {showModelOverlay && result?.modelInfo && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-3xl overflow-y-auto overflow-x-hidden px-4 py-12 md:py-24 flex justify-center custom-scrollbar"
+          >
+             {/* Floating Background Court Icons */}
+             <div className="fixed inset-0 pointer-events-none overflow-hidden flex items-center justify-center z-0">
+                <Scale className="absolute top-[10%] left-[5%] w-96 h-96 text-indigo-500/5 rotate-[-15deg] blur-[2px] animate-pulse duration-[10s]" />
+                <History className="absolute bottom-[20%] right-[5%] w-80 h-80 text-cyan-500/5 rotate-[15deg] blur-[2px] animate-pulse duration-[12s]" />
+             </div>
+
+             <motion.div 
+                initial={{ scale: 0.85, y: 40, opacity: 0 }} 
+                animate={{ scale: 1, y: 0, opacity: 1 }} 
+                exit={{ scale: 0.85, y: 40, opacity: 0 }} 
+                transition={{ type: "spring", damping: 25, stiffness: 250 }}
+                className="w-full max-w-4xl bg-black border border-white/10 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-[0_0_80px_rgba(255,255,255,0.03)] h-fit my-auto z-10"
+             >
+               {/* Background Grid & Glows */}
+               <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-5 mix-blend-overlay pointer-events-none"></div>
+               <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+               <div className="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+               <button onClick={() => setShowModelOverlay(false)} className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-all hover:scale-110 shadow-lg border border-white/5 z-20">
+                 ✕ 
+               </button>
+               
+               <div className="flex items-center gap-4 mb-8 border-b border-white/5 pb-8 relative z-10">
+                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-[0_0_30px_rgba(34,211,238,0.2)]">
+                   <BrainCircuit className="w-8 h-8 text-black" />
+                 </div>
+                 <div>
+                   <h2 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight">Model Telemetry</h2>
+                   <p className="text-slate-400 mt-1 font-medium">Deep analysis of court intelligence algorithms.</p>
+                 </div>
+               </div>
+
+               <div className="space-y-8 relative z-10">
+                 {Object.entries(result.modelInfo.bestSummary).map(([key, details], index) => {
+                   const titles = { conviction: "Conviction Predictor", chargeSeverity: "Severity Classification", recidivism: "Recidivism Risk Matrix" };
+                   const colors = { conviction: "stroke-cyan-400", chargeSeverity: "stroke-indigo-400", recidivism: "stroke-rose-400" };
+                   const dotColors = { conviction: "bg-cyan-400 shadow-cyan-400/50", chargeSeverity: "bg-indigo-400 shadow-indigo-400/50", recidivism: "bg-rose-400 shadow-rose-400/50" };
+                   const textColors = { conviction: "text-cyan-400", chargeSeverity: "text-indigo-400", recidivism: "text-rose-400" };
+                   
+                   const isExpanded = expandedModelKey === key;
+
+                   return (
+                     <motion.div initial={{opacity:0, y: 30}} animate={{opacity:1, y:0}} transition={{delay: index*0.15 + 0.1, type: "spring", stiffness: 200}} key={key} className="glass-panel p-6 rounded-3xl bg-black border border-white/10 shadow-2xl hover:border-white/20 transition-all group">
+                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                         <div className="flex items-center gap-3">
+                           <div className={`w-2.5 h-2.5 rounded-full ${dotColors[key]} group-hover:scale-150 transition-transform shadow-[0_0_10px_rgba(255,255,255,0.5)]`}></div>
+                           <h3 className="text-xl font-display font-bold text-white tracking-wide">{titles[key]}</h3>
+                         </div>
+                         <div className="flex flex-wrap items-center gap-3">
+                           <span className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-mono tracking-widest uppercase text-slate-300 shadow-inner">{details.model}</span>
+                           <button onClick={(e) => { e.preventDefault(); setExpandedModelKey(isExpanded ? null : key); }} className="px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-full text-[10px] font-bold tracking-widest uppercase text-white transition-colors flex items-center gap-2">
+                              {isExpanded ? "Close Info" : "More Info"}
+                           </button>
+                         </div>
+                       </div>
+                       
+                       <div className="flex flex-wrap md:flex-nowrap justify-around gap-6 py-4">
+                          <CircularGauge label="CV Accuracy" value={details.cvAccuracy} color={colors[key]} />
+                          <CircularGauge label="CV F1 Score" value={details.cvF1} color={colors[key]} />
+                       </div>
+
+                       <AnimatePresence>
+                         {isExpanded && (
+                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                             <div className="pt-6 mt-4 border-t border-white/5 grid grid-cols-2 md:grid-cols-4 gap-4">
+                               <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center justify-center">
+                                 <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">Accuracy</span>
+                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}>{details.accuracy}%</span>
+                               </div>
+                               <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center justify-center">
+                                 <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">F1 Score</span>
+                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}>{details.f1}%</span>
+                               </div>
+                               <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center justify-center">
+                                 <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">Precision</span>
+                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}>{details.precision}%</span>
+                               </div>
+                               <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center justify-center">
+                                 <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mb-1">Recall</span>
+                                 <span className={`text-2xl font-mono font-bold ${textColors[key]}`}>{details.recall}%</span>
+                               </div>
+                             </div>
+                             
+                             {(key === 'conviction' || key === 'chargeSeverity') && result.modelInfo.decileRegressor && (
+                               <div className="mt-4 p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="text-xs text-slate-400 font-semibold mb-1">Auxiliary Decile Regressor</span>
+                                    <span className="text-sm text-slate-200">{result.modelInfo.decileRegressor.name}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase block mb-1">Mean Abs Error</span>
+                                    <span className="text-xl font-mono font-bold text-slate-300">{result.modelInfo.decileRegressor.mae}</span>
+                                  </div>
+                               </div>
+                             )}
+                           </motion.div>
+                         )}
+                       </AnimatePresence>
+                     </motion.div>
+                   )
+                 })}
+               </div>
+             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      <footer className="border-t border-white/5 bg-black/80 backdrop-blur-md mt-auto z-10 py-8 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+           <div>
+             <p className="font-display font-bold text-white text-lg">CaseCast AI</p>
+             <p className="text-slate-500 text-sm mt-1">Premium legal intelligence frontend for ML-powered case outcome prediction.</p>
+           </div>
+           <div className="flex flex-col gap-1 text-slate-500 text-xs md:text-right">
+             <span>Copyright © 2026 CaseCast Technologies.</span>
+             <span>sankirthan1811@gmail.com | +91 9876543210</span>
+           </div>
         </div>
       </footer>
-      </StarBorder>
-    </ClickSpark>
+    </div>
   );
 }

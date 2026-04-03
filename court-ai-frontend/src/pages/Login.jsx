@@ -1,51 +1,50 @@
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import ClickSpark from "../components/ClickSpark";
 import FrostedLoginForm from "../components/FrostedLoginForm";
-import StarBorder from "../components/StarBorder";
 
 export default function Login({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
-	const navigate = useNavigate();
+  const navigate = useNavigate();
 
-	useEffect(() => {
-		if (user) {
-			navigate("/app", { replace: true });
-		}
-	}, [user, navigate]);
+  useEffect(() => {
+    if (user) {
+      navigate("/app", { replace: true });
+    }
+  }, [user, navigate]);
 
-	return (
-		<ClickSpark
-			sparkColor="rgba(201, 227, 255, 0.92)"
-			sparkSize={9}
-			sparkRadius={20}
-			sparkCount={8}
-			duration={430}
-			easing="ease-out"
-		>
-			<main className="login-shell">
-				<StarBorder
-					as={motion.div}
-					className="login-panel"
-					initial={{ opacity: 0, scale: 0.9, y: 24 }}
-					animate={{ opacity: 1, scale: 1, y: 0 }}
-					transition={{ duration: 0.55, ease: "easeOut" }}
-					color="rgba(206, 229, 255, 0.9)"
-					speed="8.2s"
-					thickness={1.2}
-				>
-					<FrostedLoginForm
-						title="Login"
-						subtitle="Welcome to CaseCast"
-						showHomeButton
-						onHome={() => navigate("/")}
-						onLogin={onLogin}
-						onSignup={onSignup}
-						onForgot={onForgot}
-						onGoogleAuth={onGoogleAuth}
-					/>
-				</StarBorder>
-			</main>
-		</ClickSpark>
-	);
+  return (
+    <main className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Dynamic Background Mesh */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-900/40 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-900/40 rounded-full mix-blend-screen filter blur-[150px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      </div>
+      
+      {/* Grid Overlay */}
+      <div className="absolute inset-0 z-0 bg-[url('/noise.svg')] opacity-[0.04]"></div>
+
+      <motion.div
+        className="relative z-10 w-full max-w-md"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <div className="glass-panel p-8 rounded-3xl relative overflow-hidden group border-white/10 hover:border-cyan-500/30 transition-colors duration-500">
+          {/* subtle glow border effect top */}
+          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+          
+          <FrostedLoginForm
+            title="Login"
+            subtitle="Welcome to CaseCast"
+            showHomeButton
+            onHome={() => navigate("/")}
+            onLogin={onLogin}
+            onSignup={onSignup}
+            onForgot={onForgot}
+            onGoogleAuth={onGoogleAuth}
+          />
+        </div>
+      </motion.div>
+    </main>
+  );
 }

@@ -1,203 +1,148 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import ClickSpark from "./components/ClickSpark";
-import FrostedLoginForm from "./components/FrostedLoginForm";
-import SplitText from "./components/SplitText";
-import StarBorder from "./components/StarBorder";
 import Login from "./pages/Login";
 import MainPortal from "./pages/MainPortal";
 import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient";
-
-const letterSource = "CASECOURTCRIMEPREDICTIONCONVICTION";
+import FrostedLoginForm from "./components/FrostedLoginForm";
+import { Scale, BookOpen, ScrollText } from "lucide-react";
 
 function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
   const navigate = useNavigate();
-  const [cursor, setCursor] = useState({ x: 0, y: 0, active: false });
-  const [cursorLetters, setCursorLetters] = useState([]);
   const [showInlineLogin, setShowInlineLogin] = useState(false);
-  const [isAuthHovered, setIsAuthHovered] = useState(false);
-  const lastSpawnRef = useRef(0);
-  const letterIndexRef = useRef(0);
-
-  const spawnCursorLetter = (x, y) => {
-    const now = performance.now();
-    if (now - lastSpawnRef.current < 150) {
-      return;
-    }
-
-    lastSpawnRef.current = now;
-    const id = `${now}-${Math.random().toString(36).slice(2, 8)}`;
-    const sequence = letterIndexRef.current++;
-
-    const angle = Math.random() * Math.PI * 2;
-    const radius = 26 + Math.random() * 56;
-    const spawnX = x + Math.cos(angle) * radius;
-    const spawnY = y + Math.sin(angle) * radius;
-
-    const letter = {
-      id,
-      text: letterSource[sequence % letterSource.length],
-      x: spawnX,
-      y: spawnY,
-      dx: `${(Math.random() - 0.5) * 42}px`,
-      dy: `${-14 - Math.random() * 36}px`,
-      size: `${0.84 + Math.random() * 0.78}rem`,
-      duration: `${1.05 + Math.random() * 0.42}s`,
-      rotation: `${(Math.random() - 0.5) * 18}deg`,
-    };
-
-    setCursorLetters((prev) =>
-      prev.length > 26 ? [...prev.slice(-20), letter] : [...prev, letter],
-    );
-
-    setTimeout(() => {
-      setCursorLetters((prev) => prev.filter((item) => item.id !== id));
-    }, 1220);
-  };
 
   const handleGetStarted = () => {
     if (user) {
       navigate("/app");
       return;
     }
-
-    if (showInlineLogin) {
-      return;
-    }
-
     setShowInlineLogin(true);
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.2 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 40, filter: 'blur(10px)', scale: 0.95 },
+    visible: { 
+      opacity: 1, y: 0, filter: 'blur(0px)', scale: 1, 
+      transition: { type: "spring", stiffness: 120, damping: 20 } 
+    }
+  };
+
   return (
-    <div
-      className={`landing-shell${isAuthHovered ? " is-auth-hovered" : ""}`}
-      onMouseMove={(event) => {
-        setCursor({ x: event.clientX, y: event.clientY, active: true });
-        spawnCursorLetter(event.clientX, event.clientY);
-      }}
-      onMouseLeave={() => {
-        setCursor((prev) => ({ ...prev, active: false }));
-        setCursorLetters([]);
-      }}
-      onMouseEnter={() => setCursor((prev) => ({ ...prev, active: true }))}
-    >
-      <div
-        className={`cursor-letter-field${cursor.active ? " is-active" : ""}`}
-        style={{
-          "--cursor-x": `${cursor.x}px`,
-          "--cursor-y": `${cursor.y}px`,
-        }}
-        aria-hidden="true"
-      >
-        {cursorLetters.map((letter) => (
-          <span
-            key={letter.id}
-            className="emerging-letter"
-            style={{
-              "--start-x": `${letter.x}px`,
-              "--start-y": `${letter.y}px`,
-              "--letter-dx": letter.dx,
-              "--letter-dy": letter.dy,
-              "--letter-size": letter.size,
-              "--letter-duration": letter.duration,
-              "--letter-rotation": letter.rotation,
-            }}
-          >
-            {letter.text}
-          </span>
-        ))}
+    <div className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden font-sans bg-black selection:bg-cyan-500/30 text-white">
+      {/* Majestic Royal Courtroom Background (Landing Page Only) */}
+      <div className="fixed inset-0 z-0 pointer-events-none bg-[#050505]">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat opacity-[0.55]"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-black/30"></div>
+        {/* Subtle warm glow behind text */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-amber-700/20 filter blur-[150px] rounded-full"></div>
       </div>
+      
+      {/* Grid Overlay & Subdued Noise */}
+      <div className="fixed inset-0 z-0 bg-[url('/noise.svg')] opacity-[0.06] pointer-events-none"></div>
 
-      <main className="hero-wrap">
-        <motion.section
-          className={`hero-content${showInlineLogin ? " is-auth-open" : ""}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.24 }}
-        >
-          <p className="hero-kicker">Legal intelligence, reimagined</p>
+      <motion.main 
+        variants={containerVariants} 
+        initial="hidden" 
+        animate="visible" 
+        className="relative z-10 w-full max-w-6xl mx-auto px-6 py-20 md:py-32 flex flex-col items-center text-center my-auto min-h-screen justify-center"
+      >
+        <motion.div variants={itemVariants} className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-amber-500/20 bg-amber-950/20 text-amber-100 text-xs md:text-sm font-semibold tracking-[0.2em] uppercase mb-10 shadow-[0_0_30px_rgba(217,119,6,0.1)] backdrop-blur-xl">
+          <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)] animate-pulse"></span>
+          Supreme Legal Intelligence
+        </motion.div>
 
-          <ClickSpark
-            sparkColor="rgba(226, 239, 255, 0.95)"
-            sparkSize={12}
-            sparkRadius={22}
-            sparkCount={9}
-            duration={520}
-            easing="ease-out"
-            extraScale={1.05}
-            className="title-spark-wrap"
-          >
-            <SplitText
-              tag="h1"
-              text="CASE CAST"
-              className="dot-title"
-              splitType="chars"
-              triggerOnLoad
-              delay={38}
-              duration={0.9}
-              ease="power4.out"
-              from={{ opacity: 0, y: 42, rotationX: -26 }}
-              to={{ opacity: 1, y: 0, rotationX: 0 }}
-              threshold={0.08}
-            />
-          </ClickSpark>
+        <motion.div variants={itemVariants} className="mb-8 perspective-1000 w-full">
+          <h1 className="font-royal flex flex-wrap justify-center items-center py-4 drop-shadow-2xl">
+            {"CASE CAST".split("").map((char, index) => {
+               if (char === " ") return <span key={index} className="w-6 md:w-12"></span>;
+               
+               // All characters use a completely vintage, premium warm gold/silver blend
+               const gradStyle = "text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-amber-200 to-amber-600 drop-shadow-[0_0_40px_rgba(251,191,36,0.2)]";
 
-          <div className={`hero-actions${showInlineLogin ? " is-expanded" : ""}`}>
-            <AnimatePresence mode="wait" initial={false}>
-              {!showInlineLogin ? (
-                <motion.div
-                  key="cta"
-                  layoutId="auth-morph-shell"
-                  className="cta-shell"
-                  transition={{ type: "spring", stiffness: 240, damping: 28, mass: 1 }}
-                >
-                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                    <StarBorder
-                      as="button"
-                      type="button"
-                      onClick={handleGetStarted}
-                      className="get-started-btn"
-                      color="rgba(203, 229, 255, 0.95)"
-                      speed="6.8s"
-                    >
-                      <span>Get Started</span>
-                      <span className="arrow">-&gt;</span>
-                    </StarBorder>
-                  </motion.div>
-                </motion.div>
-              ) : (
-                <StarBorder
-                  as={motion.section}
-                  key="login"
-                  layoutId="auth-morph-shell"
-                  className="inline-frosted-shell inline-frosted-shell--star"
-                  onMouseEnter={() => setIsAuthHovered(true)}
-                  onMouseLeave={() => setIsAuthHovered(false)}
-                  initial={{ opacity: 0.6, y: 14, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 14, scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 235, damping: 30, mass: 1.08 }}
-                  color="rgba(206, 229, 255, 0.9)"
-                  speed="8.4s"
-                  thickness={1.2}
-                >
-                  <FrostedLoginForm
-                    title="Login"
-                    subtitle="Sign in to CaseCast"
-                    onClose={() => setShowInlineLogin(false)}
-                    onLogin={onLogin}
-                    onSignup={onSignup}
-                    onForgot={onForgot}
-                    onGoogleAuth={onGoogleAuth}
-                  />
-                </StarBorder>
-              )}
-            </AnimatePresence>
-          </div>
-        </motion.section>
-      </main>
+               return (
+                 <motion.span 
+                   key={index}
+                   initial={{ opacity: 0, y: 70, filter: 'blur(20px)', rotateX: -90, scale: 0.8 }}
+                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)', rotateX: 0, scale: 1 }}
+                   transition={{ duration: 1.5, delay: 0.2 + index * 0.1, type: "spring", stiffness: 80, damping: 20 }}
+                   className={`text-[4.5rem] sm:text-[6rem] md:text-[9rem] lg:text-[11rem] md:leading-none font-bold tracking-tight mx-[2px] md:mx-[6px] ${gradStyle}`}
+                 >
+                   {char}
+                 </motion.span>
+               )
+            })}
+          </h1>
+        </motion.div>
+        
+        <motion.p variants={itemVariants} className="max-w-3xl text-amber-100/70 text-lg md:text-2xl leading-relaxed mb-16 font-light tracking-wide shadow-black">
+          Leverage advanced machine learning architecture to forecast conviction rates, evaluate risk, and map recidivism with absolute situational awareness.
+        </motion.p>
+
+        <motion.div variants={itemVariants} className="relative w-full max-w-md mx-auto flex justify-center h-[520px]">
+          <AnimatePresence mode="wait">
+            {!showInlineLogin ? (
+              <motion.button 
+                key="btn"
+                initial={{ opacity: 0, scale: 0.8, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -20, filter: 'blur(15px)' }}
+                transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 20 }}
+                onClick={handleGetStarted}
+                className="group absolute top-6 px-10 py-5 bg-black border border-white/10 hover:border-cyan-500/50 rounded-full shadow-[0_0_60px_rgba(0,0,0,0.8)] hover:shadow-[0_0_80px_rgba(6,182,212,0.3)] transition-all duration-500 flex items-center gap-4 overflow-hidden focus:outline-none"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/30 to-indigo-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <span className="relative z-10 font-display font-black tracking-[0.15em] uppercase text-sm text-slate-100 group-hover:text-white flex items-center justify-center gap-4">
+                  Get Started
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-black transition-colors duration-300 shadow-inner">
+                    <ChevronRightIcon />
+                  </div>
+                </span>
+                <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-500/80 to-transparent scale-0 group-hover:scale-100 transition-transform duration-700 origin-center"></div>
+              </motion.button>
+            ) : (
+              <motion.div
+                key="loginform"
+                initial={{ opacity: 0, scale: 0.9, y: 50, filter: 'blur(20px)' }}
+                animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, scale: 0.95, y: -30, filter: 'blur(20px)' }}
+                transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.8 }}
+                className="absolute inset-x-0 top-0 w-full z-20"
+              >
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl rounded-[2.5rem] -z-10 shadow-[0_0_100px_rgba(0,0,0,0.9)] border border-white/10"></div>
+                <div className="p-8 md:p-10 relative">
+                   <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+                   <FrostedLoginForm 
+                     onClose={() => setShowInlineLogin(false)}
+                     onLogin={onLogin}
+                     onSignup={onSignup}
+                     onForgot={onForgot}
+                     onGoogleAuth={onGoogleAuth}
+                   />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.main>
     </div>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg className="w-5 h-5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6l6 6-6 6" />
+    </svg>
   );
 }
 
@@ -237,171 +182,100 @@ function App() {
   }, []);
 
   const handleSignup = async ({ email, password, username }) => {
-    if (!supabase) {
-      throw new Error(supabaseInitError || "Supabase is not configured.");
-    }
-
+    if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          username: username || "",
-        },
-      },
+      options: { data: { username: username || "" } },
     });
-
-    if (error) {
-      throw error;
-    }
-
-    return {
-      message: data.session
-        ? "User created and signed in."
-        : "User created. Check your email for verification.",
-    };
+    if (error) throw error;
+    return { message: data.session ? "User created and signed in." : "User created. Check your email for verification." };
   };
 
   const handleLogin = async ({ email, password }) => {
-    if (!supabase) {
-      throw new Error(supabaseInitError || "Supabase is not configured.");
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      throw error;
-    }
-
+    if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
     const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) {
-      throw userError;
-    }
-
-    console.log("Supabase auth user:", userData.user);
+    if (userError) throw userError;
     navigate("/app");
-
-    return {
-      message: `Logged in as ${userData.user?.email || email}`,
-    };
+    return { message: `Logged in as ${userData.user?.email || email}` };
   };
 
   const handleGoogleAuth = async () => {
-    if (!supabase) {
-      throw new Error(supabaseInitError || "Supabase is not configured.");
-    }
-
+    if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/app`,
-      },
+      options: { redirectTo: `${window.location.origin}/app` },
     });
-
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   };
 
   const handleForgotPassword = async ({ email }) => {
-    if (!supabase) {
-      throw new Error(supabaseInitError || "Supabase is not configured.");
-    }
-
+    if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/login`,
     });
-
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return { message: "Password reset email sent." };
   };
 
   const handleLogout = async () => {
-    if (!supabase) {
-      navigate("/login");
-      return;
-    }
-
+    if (!supabase) { navigate("/login"); return; }
     const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     navigate("/login");
   };
 
   if (isAuthLoading) {
     return (
-      <div className="app-shell">
-        <div className="site-background" aria-hidden="true" />
-        <div className="site-background-tint" aria-hidden="true" />
-        <div className="app-content" style={{ display: "grid", placeItems: "center", minHeight: "100vh", color: "#fff" }}>
-          Loading authentication...
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-slate-900 border-t-cyan-500 rounded-full animate-spin"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="app-shell">
-      <div className="site-background" aria-hidden="true" />
-      <div className="site-background-tint" aria-hidden="true" />
-
-      <ClickSpark
-        sparkColor="rgba(198, 224, 255, 0.9)"
-        sparkSize={9}
-        sparkRadius={18}
-        sparkCount={7}
-        duration={420}
-        easing="ease-out"
-        extraScale={1}
-        className="w-full h-full"
-      >
-        <div className="app-content">
-          <Routes>
-            <Route
-              path="/"
-              element={(
-                <Landing
-                  key={`landing-${location.key}`}
-                  user={currentUser}
-                  onLogin={handleLogin}
-                  onSignup={handleSignup}
-                  onForgot={handleForgotPassword}
-                  onGoogleAuth={handleGoogleAuth}
-                />
-              )}
+    <div className="min-h-screen bg-black text-slate-50 selection:bg-cyan-500/30">
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Landing
+              key={`landing-${location.key}`}
+              user={currentUser}
+              onLogin={handleLogin}
+              onSignup={handleSignup}
+              onForgot={handleForgotPassword}
+              onGoogleAuth={handleGoogleAuth}
             />
-            <Route
-              path="/login"
-              element={(
-                <Login
-                  user={currentUser}
-                  onLogin={handleLogin}
-                  onSignup={handleSignup}
-                  onForgot={handleForgotPassword}
-                  onGoogleAuth={handleGoogleAuth}
-                />
-              )}
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <Login
+              user={currentUser}
+              onLogin={handleLogin}
+              onSignup={handleSignup}
+              onForgot={handleForgotPassword}
+              onGoogleAuth={handleGoogleAuth}
             />
-            <Route
-              path="/app"
-              element={
-                currentUser || !hasSupabaseConfig ? (
-                  <MainPortal user={currentUser} onLogout={handleLogout} />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-          </Routes>
-        </div>
-      </ClickSpark>
+          }
+        />
+        <Route
+          path="/app"
+          element={
+            currentUser || !hasSupabaseConfig ? (
+              <MainPortal user={currentUser} onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
     </div>
   );
 }
