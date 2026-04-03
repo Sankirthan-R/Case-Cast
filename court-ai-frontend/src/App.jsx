@@ -1,16 +1,17 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useRef, useState } from "react";
-import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import ClickSpark from "./components/ClickSpark";
 import FrostedLoginForm from "./components/FrostedLoginForm";
 import SplitText from "./components/SplitText";
 import StarBorder from "./components/StarBorder";
 import Login from "./pages/Login";
 import MainPortal from "./pages/MainPortal";
+import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient";
 
 const letterSource = "CASECOURTCRIMEPREDICTIONCONVICTION";
 
-function Landing() {
+function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
   const navigate = useNavigate();
   const [cursor, setCursor] = useState({ x: 0, y: 0, active: false });
   const [cursorLetters, setCursorLetters] = useState([]);
@@ -56,6 +57,11 @@ function Landing() {
   };
 
   const handleGetStarted = () => {
+    if (user) {
+      navigate("/app");
+      return;
+    }
+
     if (showInlineLogin) {
       return;
     }
@@ -180,9 +186,10 @@ function Landing() {
                     title="Login"
                     subtitle="Sign in to CaseCast"
                     onClose={() => setShowInlineLogin(false)}
-                    onLogin={() => navigate("/app")}
-                    onSignup={() => navigate("/app")}
-                    onGoogleAuth={() => navigate("/app")}
+                    onLogin={onLogin}
+                    onSignup={onSignup}
+                    onForgot={onForgot}
+                    onGoogleAuth={onGoogleAuth}
                   />
                 </StarBorder>
               )}
@@ -195,7 +202,150 @@ function Landing() {
 }
 
 function App() {
+  const navigate = useNavigate();
   const location = useLocation();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  useEffect(() => {
+    if (!hasSupabaseConfig || !supabase) {
+      setIsAuthLoading(false);
+      return;
+    }
+
+    let isActive = true;
+
+    const initializeSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (isActive) {
+        setCurrentUser(data.session?.user ?? null);
+        setIsAuthLoading(false);
+      }
+    };
+
+    initializeSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user ?? null);
+      setIsAuthLoading(false);
+    });
+
+    return () => {
+      isActive = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignup = async ({ email, password, username }) => {
+    if (!supabase) {
+      throw new Error(supabaseInitError || "Supabase is not configured.");
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username: username || "",
+        },
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return {
+      message: data.session
+        ? "User created and signed in."
+        : "User created. Check your email for verification.",
+    };
+  };
+
+  const handleLogin = async ({ email, password }) => {
+    if (!supabase) {
+      throw new Error(supabaseInitError || "Supabase is not configured.");
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      throw userError;
+    }
+
+    console.log("Supabase auth user:", userData.user);
+    navigate("/app");
+
+    return {
+      message: `Logged in as ${userData.user?.email || email}`,
+    };
+  };
+
+  const handleGoogleAuth = async () => {
+    if (!supabase) {
+      throw new Error(supabaseInitError || "Supabase is not configured.");
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/app`,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+  };
+
+  const handleForgotPassword = async ({ email }) => {
+    if (!supabase) {
+      throw new Error(supabaseInitError || "Supabase is not configured.");
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return { message: "Password reset email sent." };
+  };
+
+  const handleLogout = async () => {
+    if (!supabase) {
+      navigate("/login");
+      return;
+    }
+
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
+    navigate("/login");
+  };
+
+  if (isAuthLoading) {
+    return (
+      <div className="app-shell">
+        <div className="site-background" aria-hidden="true" />
+        <div className="site-background-tint" aria-hidden="true" />
+        <div className="app-content" style={{ display: "grid", placeItems: "center", minHeight: "100vh", color: "#fff" }}>
+          Loading authentication...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell">
@@ -214,9 +364,41 @@ function App() {
       >
         <div className="app-content">
           <Routes>
-            <Route path="/" element={<Landing key={`landing-${location.key}`} />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/app" element={<MainPortal />} />
+            <Route
+              path="/"
+              element={(
+                <Landing
+                  key={`landing-${location.key}`}
+                  user={currentUser}
+                  onLogin={handleLogin}
+                  onSignup={handleSignup}
+                  onForgot={handleForgotPassword}
+                  onGoogleAuth={handleGoogleAuth}
+                />
+              )}
+            />
+            <Route
+              path="/login"
+              element={(
+                <Login
+                  user={currentUser}
+                  onLogin={handleLogin}
+                  onSignup={handleSignup}
+                  onForgot={handleForgotPassword}
+                  onGoogleAuth={handleGoogleAuth}
+                />
+              )}
+            />
+            <Route
+              path="/app"
+              element={
+                currentUser || !hasSupabaseConfig ? (
+                  <MainPortal user={currentUser} onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
           </Routes>
         </div>
       </ClickSpark>

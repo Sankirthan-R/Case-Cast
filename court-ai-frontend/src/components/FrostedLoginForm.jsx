@@ -37,11 +37,34 @@ export default function FrostedLoginForm({
   const [view, setView] = useState("login");
   const [direction, setDirection] = useState(1);
   const [isMergingToApp, setIsMergingToApp] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusTone, setStatusTone] = useState("neutral");
+  const [formValues, setFormValues] = useState({
+    loginEmail: "",
+    loginPassword: "",
+    signupEmail: "",
+    signupUsername: "",
+    signupPassword: "",
+    signupConfirmPassword: "",
+    forgotEmail: "",
+  });
+
+  const setField = (key, value) => {
+    setFormValues((prev) => ({ ...prev, [key]: value }));
+    setStatusMessage("");
+  };
+
+  const setStatus = (message, tone = "neutral") => {
+    setStatusMessage(message);
+    setStatusTone(tone);
+  };
 
   const switchView = (nextView) => {
     const order = { login: 0, signup: 1, forgot: 2 };
     setDirection(order[nextView] > order[view] ? 1 : -1);
     setView(nextView);
+    setStatusMessage("");
   };
 
   const heading = useMemo(() => {
@@ -65,27 +88,92 @@ export default function FrostedLoginForm({
     };
   }, [view, title, subtitle]);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (isSubmitting) {
+      return;
+    }
+
     if (view === "login") {
-      if (isMergingToApp) {
+      const email = formValues.loginEmail.trim();
+      const password = formValues.loginPassword;
+
+      if (!email || !password) {
+        setStatus("Enter email and password to continue.", "error");
         return;
       }
 
-      setIsMergingToApp(true);
-      window.setTimeout(() => {
-        onLogin?.();
-      }, 640);
+      setIsSubmitting(true);
+      try {
+        const result = await onLogin?.({ email, password });
+        setStatus(result?.message || "Logged in successfully.", "success");
+        setIsMergingToApp(true);
+      } catch (error) {
+        setStatus(error?.message || "Login failed. Check credentials and try again.", "error");
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
 
     if (view === "signup") {
-      onSignup?.();
+      const email = formValues.signupEmail.trim();
+      const username = formValues.signupUsername.trim();
+      const password = formValues.signupPassword;
+      const confirmPassword = formValues.signupConfirmPassword;
+
+      if (!email || !password || !confirmPassword) {
+        setStatus("Email, password, and confirm password are required.", "error");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setStatus("Passwords do not match.", "error");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const result = await onSignup?.({ email, password, username });
+        setStatus(result?.message || "Signup successful. Check your email for verification.", "success");
+      } catch (error) {
+        setStatus(error?.message || "Signup failed. Please try again.", "error");
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
 
-    onForgot?.();
+    const email = formValues.forgotEmail.trim();
+    if (!email) {
+      setStatus("Enter your email to send a reset link.", "error");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await onForgot?.({ email });
+      setStatus(result?.message || "Password reset link sent.", "success");
+    } catch (error) {
+      setStatus(error?.message || "Could not send reset link.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onGoogleAuth?.();
+    } catch (error) {
+      setStatus(error?.message || "Google authentication failed.", "error");
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -117,7 +205,9 @@ export default function FrostedLoginForm({
                     type="email"
                     placeholder="Enter your email"
                     autoComplete="email"
-                    disabled={isMergingToApp}
+                    disabled={isMergingToApp || isSubmitting}
+                    value={formValues.loginEmail}
+                    onChange={(event) => setField("loginEmail", event.target.value)}
                   />
                 </label>
 
@@ -127,13 +217,15 @@ export default function FrostedLoginForm({
                     type="password"
                     placeholder="Enter your password"
                     autoComplete="current-password"
-                    disabled={isMergingToApp}
+                    disabled={isMergingToApp || isSubmitting}
+                    value={formValues.loginPassword}
+                    onChange={(event) => setField("loginPassword", event.target.value)}
                   />
                 </label>
 
                 <div className="frosted-meta-row">
                   <label className="remember-wrap">
-                    <input type="checkbox" disabled={isMergingToApp} />
+                    <input type="checkbox" disabled={isMergingToApp || isSubmitting} />
                     <span>Remember me</span>
                   </label>
 
@@ -141,7 +233,7 @@ export default function FrostedLoginForm({
                     type="button"
                     className="frosted-link"
                     onClick={() => switchView("forgot")}
-                    disabled={isMergingToApp}
+                    disabled={isMergingToApp || isSubmitting}
                   >
                     <StarBorder
                       as="span"
@@ -161,9 +253,9 @@ export default function FrostedLoginForm({
                   className={`frosted-login-btn${isMergingToApp ? " is-launching" : ""}`}
                   color="rgba(184, 214, 255, 0.9)"
                   speed="6.2s"
-                  disabled={isMergingToApp}
+                  disabled={isMergingToApp || isSubmitting}
                 >
-                  {isMergingToApp ? "Launching..." : "Log In"}
+                  {isMergingToApp ? "Launching..." : isSubmitting ? "Processing..." : "Log In"}
                 </StarBorder>
 
                 {!isMergingToApp && (
@@ -171,9 +263,10 @@ export default function FrostedLoginForm({
                     as="button"
                     type="button"
                     className="frosted-google-btn"
-                    onClick={onGoogleAuth}
+                    onClick={handleGoogleAuth}
                     color="rgba(220, 235, 255, 0.78)"
                     speed="7.4s"
+                    disabled={isSubmitting}
                   >
                     <span className="google-auth-content">
                       <GoogleLogo />
@@ -188,7 +281,7 @@ export default function FrostedLoginForm({
                     type="button"
                     className="frosted-link"
                     onClick={() => switchView("signup")}
-                    disabled={isMergingToApp}
+                    disabled={isMergingToApp || isSubmitting}
                   >
                     <StarBorder
                       as="span"
@@ -207,18 +300,51 @@ export default function FrostedLoginForm({
             {view === "signup" && (
               <>
                 <label className="frosted-field">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    autoComplete="email"
+                    value={formValues.signupEmail}
+                    onChange={(event) => setField("signupEmail", event.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </label>
+
+                <label className="frosted-field">
                   <span>Username</span>
-                  <input type="text" placeholder="Choose username" autoComplete="username" />
+                  <input
+                    type="text"
+                    placeholder="Choose username"
+                    autoComplete="username"
+                    value={formValues.signupUsername}
+                    onChange={(event) => setField("signupUsername", event.target.value)}
+                    disabled={isSubmitting}
+                  />
                 </label>
 
                 <label className="frosted-field">
                   <span>Password</span>
-                  <input type="password" placeholder="Create password" autoComplete="new-password" />
+                  <input
+                    type="password"
+                    placeholder="Create password"
+                    autoComplete="new-password"
+                    value={formValues.signupPassword}
+                    onChange={(event) => setField("signupPassword", event.target.value)}
+                    disabled={isSubmitting}
+                  />
                 </label>
 
                 <label className="frosted-field">
                   <span>Confirm Password</span>
-                  <input type="password" placeholder="Confirm password" autoComplete="new-password" />
+                  <input
+                    type="password"
+                    placeholder="Confirm password"
+                    autoComplete="new-password"
+                    value={formValues.signupConfirmPassword}
+                    onChange={(event) => setField("signupConfirmPassword", event.target.value)}
+                    disabled={isSubmitting}
+                  />
                 </label>
 
                 <StarBorder
@@ -228,7 +354,7 @@ export default function FrostedLoginForm({
                   color="rgba(184, 214, 255, 0.9)"
                   speed="6.2s"
                 >
-                  Create account
+                  {isSubmitting ? "Processing..." : "Create account"}
                 </StarBorder>
 
                 <div className="frosted-divider" aria-hidden="true">
@@ -239,9 +365,10 @@ export default function FrostedLoginForm({
                   as="button"
                   type="button"
                   className="frosted-google-btn"
-                  onClick={onGoogleAuth}
+                  onClick={handleGoogleAuth}
                   color="rgba(220, 235, 255, 0.78)"
                   speed="7.4s"
+                  disabled={isSubmitting}
                 >
                   <span className="google-auth-content">
                     <GoogleLogo />
@@ -251,7 +378,7 @@ export default function FrostedLoginForm({
 
                 <p className="frosted-register-row">
                   Already have an account?
-                  <button type="button" className="frosted-link" onClick={() => switchView("login")}>
+                  <button type="button" className="frosted-link" onClick={() => switchView("login")} disabled={isSubmitting}>
                     <StarBorder
                       as="span"
                       className="frosted-link-star"
@@ -269,13 +396,15 @@ export default function FrostedLoginForm({
             {view === "forgot" && (
               <>
                 <label className="frosted-field">
-                  <span>Username</span>
-                  <input type="text" placeholder="Enter username" autoComplete="username" />
-                </label>
-
-                <label className="frosted-field">
                   <span>Email Address</span>
-                  <input type="email" placeholder="you@example.com" autoComplete="email" />
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    value={formValues.forgotEmail}
+                    onChange={(event) => setField("forgotEmail", event.target.value)}
+                    disabled={isSubmitting}
+                  />
                 </label>
 
                 <StarBorder
@@ -285,12 +414,12 @@ export default function FrostedLoginForm({
                   color="rgba(184, 214, 255, 0.9)"
                   speed="6.2s"
                 >
-                  Send reset link
+                  {isSubmitting ? "Processing..." : "Send reset link"}
                 </StarBorder>
 
                 <p className="frosted-register-row">
                   Remembered your password?
-                  <button type="button" className="frosted-link" onClick={() => switchView("login")}>
+                  <button type="button" className="frosted-link" onClick={() => switchView("login")} disabled={isSubmitting}>
                     <StarBorder
                       as="span"
                       className="frosted-link-star"
@@ -306,6 +435,10 @@ export default function FrostedLoginForm({
             )}
           </motion.div>
         </AnimatePresence>
+
+        {statusMessage && (
+          <p className={`frosted-status frosted-status--${statusTone}`}>{statusMessage}</p>
+        )}
 
         {(showHomeButton || onClose) && (
           <div className="frosted-footer-actions">

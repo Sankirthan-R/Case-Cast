@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   History,
   Home,
+  LogOut,
   Scale,
   Sparkles,
   UserRound,
@@ -10,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ClickSpark from "../components/ClickSpark";
 import ScrollFloat from "../components/ScrollFloat/ScrollFloat";
 import StarBorder from "../components/StarBorder";
+import { supabase } from "../supabaseClient";
 
 const navItems = [
   { key: "home", label: "HOME", icon: Home },
@@ -187,11 +189,13 @@ const getFallbackPrediction = (features) => {
 
 const getModelPrediction = async (features) => {
   const endpoint = getPredictionEndpoint();
+  const authHeaders = await getAuthHeaders();
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders,
     },
     body: JSON.stringify(features),
   });
@@ -251,13 +255,51 @@ const getPredictionEndpoint = () => {
   return getApiEndpoint("predict");
 };
 
+const getAuthHeaders = async () => {
+  if (!supabase) {
+    throw new Error("Supabase client unavailable");
+  }
+
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) {
+    throw new Error("Missing auth session token");
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 const sectionTitleMap = {
   conviction: "Convicted / Not Convicted",
   chargeSeverity: "Bailable / Non-Bailable",
   recidivism: "Recidivism (2-Year)",
 };
 
-export default function MainPortal() {
+const predictionHistoryTable = "prediction_history";
+
+const mapHistoryRowToItem = (row) => {
+  const payload = row.input_payload || {};
+  return {
+    id: row.id,
+    age: payload.age,
+    sex: payload.sex,
+    priorOffenses: payload.priorOffenses,
+    juvenileFelonyCount: payload.juvenileFelonyCount,
+    juvenileMisdemeanorCount: payload.juvenileMisdemeanorCount,
+    juvenileOtherCount: payload.juvenileOtherCount,
+    daysBetweenArrestAndScreening: payload.daysBetweenArrestAndScreening,
+    daysFromOffenseToScreen: payload.daysFromOffenseToScreen,
+    jailDurationDays: payload.jailDurationDays,
+    outcome: row.outcome,
+    confidence: row.confidence,
+    source: row.source,
+    createdAt: row.created_at,
+  };
+};
+
+export default function MainPortal({ user, onLogout }) {
   const castFormRef = useRef(null);
   const [activeTab, setActiveTab] = useState("home");
   const [castingInputs, setCastingInputs] = useState(initialCastingInputs);
@@ -268,22 +310,95 @@ export default function MainPortal() {
   const [showModelInfo, setShowModelInfo] = useState(false);
   const [apiStatus, setApiStatus] = useState("checking");
   const [lastApiError, setLastApiError] = useState("");
+  const [syncError, setSyncError] = useState("");
+  const [historySyncMode, setHistorySyncMode] = useState("backend");
+  const authProvider = (user?.app_metadata?.provider || "email").toUpperCase();
+  const signedInEmail = user?.email || "Authenticated User";
 
-  useEffect(() => {
+  const getCachedHistory = () => {
     const stored = localStorage.getItem("casecast-history");
     if (!stored) {
-      return;
+      return [];
     }
 
     try {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        setHistoryItems(parsed);
-      }
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      setHistoryItems([]);
+      return [];
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const loadHistory = async () => {
+      const cached = getCachedHistory();
+      if (cached.length && active) {
+        setHistoryItems(cached);
+      }
+
+      if (!user) {
+        if (!cached.length && active) {
+          setHistoryItems([]);
+        }
+        return;
+      }
+
+      try {
+        const authHeaders = await getAuthHeaders();
+        const response = await fetch(`${getApiEndpoint("history")}?page=1&page_size=24`, {
+          headers: {
+            ...authHeaders,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`History fetch failed with ${response.status}`);
+        }
+
+        const payload = await response.json();
+        if (active) {
+          setSyncError("");
+          setHistorySyncMode("backend");
+          setHistoryItems((payload.items || []).map(mapHistoryRowToItem));
+        }
+      } catch {
+        try {
+          if (!supabase) {
+            throw new Error("Supabase client unavailable");
+          }
+
+          const { data, error } = await supabase
+            .from(predictionHistoryTable)
+            .select("id, input_payload, outcome, confidence, source, created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(24);
+
+          if (error) {
+            throw error;
+          }
+
+          if (active) {
+            setHistorySyncMode("supabase");
+            setSyncError("Using Supabase fallback for history because backend history API is unavailable.");
+            setHistoryItems((data || []).map(mapHistoryRowToItem));
+          }
+        } catch {
+          if (active) {
+            setSyncError("History sync unavailable. Showing cached history on this device.");
+          }
+        }
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     localStorage.setItem("casecast-history", JSON.stringify(historyItems));
@@ -453,6 +568,26 @@ export default function MainPortal() {
 
     setResult(prediction);
     setHistoryItems((prev) => [entry, ...prev].slice(0, 24));
+
+    if (user) {
+      if (historySyncMode === "supabase") {
+        const { error } = await supabase.from(predictionHistoryTable).insert({
+          user_id: user.id,
+          input_payload: parsed,
+          output_payload: prediction,
+          outcome: prediction.summary.outcome,
+          confidence: prediction.summary.confidence,
+          source: prediction.source,
+          created_at: entry.createdAt,
+        });
+
+        if (error) {
+          setSyncError("Prediction worked, but Supabase history insert failed.");
+        }
+      } else {
+        setSyncError("");
+      }
+    }
   };
 
   const clearCasting = () => {
@@ -515,6 +650,11 @@ export default function MainPortal() {
             </div>
           </StarBorder>
         </motion.nav>
+
+        <div className="portal-auth-badge" aria-label="Authenticated user details">
+          <span className="portal-auth-provider">{authProvider}</span>
+          <strong className="portal-auth-email">{signedInEmail}</strong>
+        </div>
       </header>
 
       <main className="portal-content">
@@ -773,6 +913,7 @@ export default function MainPortal() {
 
                     {formError && <p className="portal-form-error">{formError}</p>}
                     {lastApiError && <p className="portal-form-error">{lastApiError}</p>}
+                    {syncError && <p className="portal-form-error">{syncError}</p>}
 
                     <div className="portal-cast-actions">
                       <StarBorder
@@ -996,8 +1137,11 @@ export default function MainPortal() {
               <div className="portal-grid portal-grid-profile">
                 <article className="portal-card portal-profile-main">
                   <p className="portal-kicker">User Profile</p>
-                  <h2>Case Analyst</h2>
+                  <h2>{user?.email || "Case Analyst"}</h2>
                   <p>Manage your account and system behavior preferences for smooth ML-assisted case predictions.</p>
+                  <button type="button" className="portal-ghost" onClick={onLogout}>
+                    <LogOut size={16} /> Logout
+                  </button>
                 </article>
 
                 <article className="portal-card portal-preference">

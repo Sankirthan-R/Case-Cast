@@ -1,11 +1,18 @@
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ClickSpark from "../components/ClickSpark";
 import FrostedLoginForm from "../components/FrostedLoginForm";
 import StarBorder from "../components/StarBorder";
 
-export default function Login() {
+export default function Login({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
 	const navigate = useNavigate();
+
+	useEffect(() => {
+		if (user) {
+			navigate("/app", { replace: true });
+		}
+	}, [user, navigate]);
 
 	return (
 		<ClickSpark
@@ -32,9 +39,10 @@ export default function Login() {
 						subtitle="Welcome to CaseCast"
 						showHomeButton
 						onHome={() => navigate("/")}
-						onLogin={() => navigate("/app")}
-						onSignup={() => navigate("/app")}
-						onGoogleAuth={() => navigate("/app")}
+						onLogin={onLogin}
+						onSignup={onSignup}
+						onForgot={onForgot}
+						onGoogleAuth={onGoogleAuth}
 					/>
 				</StarBorder>
 			</main>
