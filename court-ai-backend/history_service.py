@@ -39,9 +39,13 @@ class HistoryService:
         }
 
         try:
-            self.clients.service.from_(self.table_name).insert(row).execute()
-        except Exception:
-            logger.exception("history.record.failed")
+            result = self.clients.service.from_(self.table_name).insert(row).execute()
+            if hasattr(result, 'data') and result.data:
+                logger.info("history.record.success user_id=%s", user_id)
+            else:
+                logger.error("history.record.empty_response — check SUPABASE_SERVICE_ROLE_KEY in .env")
+        except Exception as exc:
+            logger.exception("history.record.failed error=%s", exc)
             return
 
         elapsed_ms = (time.perf_counter() - started) * 1000
