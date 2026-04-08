@@ -231,11 +231,20 @@ export default function PredictPage({
               </div>
 
               {/* Summary Banner */}
-              <div className={`p-10 rounded-3xl border shadow-2xl relative overflow-hidden backdrop-blur-xl ${
+              <div
+                className={`aggregate-risk-banner p-10 rounded-3xl border shadow-2xl relative overflow-hidden backdrop-blur-xl ${
                 result.summary.outcome.includes("High") ? "bg-rose-950/20 border-rose-500/50 shadow-rose-500/20" :
                 result.summary.outcome.includes("Moderate") ? "bg-amber-950/20 border-amber-500/50 shadow-amber-500/20" :
                 "bg-emerald-950/20 border-emerald-500/50 shadow-emerald-500/20"
-              }`}>
+              }`}
+                data-risk={
+                  result.summary.outcome.includes("High")
+                    ? "high"
+                    : result.summary.outcome.includes("Moderate")
+                    ? "moderate"
+                    : "low"
+                }
+              >
                 <div className="absolute -right-10 -top-10 opacity-10">
                   {result.summary.outcome.includes("High") ? <ShieldAlert className="w-64 h-64 text-rose-500" /> : <Scale className="w-64 h-64 text-emerald-500" />}
                 </div>

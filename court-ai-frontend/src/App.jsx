@@ -7,7 +7,7 @@ import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient
 import FrostedLoginForm from "./components/FrostedLoginForm";
 import { MoonStar, Scale, Sun } from "lucide-react";
 
-function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
+function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
   const navigate = useNavigate();
   const [showInlineLogin, setShowInlineLogin] = useState(false);
 
@@ -84,6 +84,8 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
                const isCast = index > 4;
                const gradStyle = isCast 
                  ? "text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-600 drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]" 
+                 : theme === "light"
+                 ? "text-slate-950 drop-shadow-[0_0_18px_rgba(15,23,42,0.18)]"
                  : "text-transparent bg-clip-text bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]";
 
                return (
@@ -284,6 +286,7 @@ function App() {
               onSignup={handleSignup}
               onForgot={handleForgotPassword}
               onGoogleAuth={handleGoogleAuth}
+              theme={theme}
             />
           }
         />
