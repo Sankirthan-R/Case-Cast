@@ -1,11 +1,11 @@
-import { AnimatePresence, motion, useMotionValue, useSpring } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
 import MainPortal from "./pages/MainPortal";
 import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient";
 import FrostedLoginForm from "./components/FrostedLoginForm";
-import { MoonStar, Scale, Sun } from "lucide-react";
+import { Scale, BookOpen, ScrollText } from "lucide-react";
 
 function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
   const navigate = useNavigate();
@@ -17,19 +17,6 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
       return;
     }
     setShowInlineLogin(true);
-  };
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
-
-  const handleMouseMove = (e) => {
-    const { clientX, clientY } = e;
-    const xOffset = (clientX / window.innerWidth - 0.5) * 100; // max +/- 50px
-    const yOffset = (clientY / window.innerHeight - 0.5) * 100;
-    mouseX.set(xOffset);
-    mouseY.set(yOffset);
   };
 
   const containerVariants = {
@@ -49,16 +36,16 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
   };
 
   return (
-    <div onMouseMove={handleMouseMove} className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden font-sans bg-black selection:bg-cyan-500/30 text-white">
+    <div className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden font-sans bg-black selection:bg-cyan-500/30 text-white">
       {/* Futuristic Royal Blue / Cyan Nebula Background */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-black">
-        <motion.div style={{ x: springX, y: springY }} animate={{ rotate: 360, scale: [1, 1.05, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute top-[-20%] left-[-20%] w-[100vw] h-[100vw] opacity-[0.85]">
-          <div className="absolute top-[20%] right-[30%] w-[600px] h-[600px] bg-blue-600/50 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
-          <div className="absolute bottom-[20%] left-[20%] w-[700px] h-[700px] bg-cyan-700/50 rounded-full mix-blend-screen filter blur-[150px]"></div>
+        <motion.div animate={{ rotate: 360, scale: [1, 1.05, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute top-[-20%] left-[-20%] w-[100vw] h-[100vw] opacity-[0.5]">
+          <div className="absolute top-[20%] right-[30%] w-[600px] h-[600px] bg-blue-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
+          <div className="absolute bottom-[20%] left-[20%] w-[700px] h-[700px] bg-cyan-800/30 rounded-full mix-blend-screen filter blur-[150px]"></div>
         </motion.div>
-        <motion.div style={{ x: springX, y: springY }} animate={{ rotate: -360, scale: [1, 1.1, 1] }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }} className="absolute bottom-[-10%] right-[-20%] w-[100vw] h-[100vw] opacity-[0.75]">
-          <div className="absolute bottom-1/4 right-1/4 w-[700px] h-[700px] bg-indigo-600/50 rounded-full mix-blend-screen filter blur-[150px] animate-pulse"></div>
-          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-sky-500/40 rounded-full mix-blend-screen filter blur-[120px]"></div>
+        <motion.div animate={{ rotate: -360, scale: [1, 1.1, 1] }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }} className="absolute bottom-[-10%] right-[-20%] w-[100vw] h-[100vw] opacity-[0.4]">
+          <div className="absolute bottom-1/4 right-1/4 w-[700px] h-[700px] bg-indigo-700/30 rounded-full mix-blend-screen filter blur-[150px] animate-pulse"></div>
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-sky-600/20 rounded-full mix-blend-screen filter blur-[120px]"></div>
         </motion.div>
       </div>
       
@@ -168,12 +155,6 @@ function App() {
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [theme, setTheme] = useState(() => localStorage.getItem("casecast-theme") || "dark");
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("casecast-theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     if (!hasSupabaseConfig || !supabase) {
@@ -262,17 +243,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black text-slate-50 selection:bg-cyan-500/30">
-      <button
-        type="button"
-        onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
-        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-        className="theme-toggle fixed top-4 right-4 z-[120]"
-      >
-        {theme === "dark" ? <Sun className="w-4 h-4" /> : <MoonStar className="w-4 h-4" />}
-        <span className="text-xs font-semibold tracking-wide">
-          {theme === "dark" ? "Light" : "Dark"}
-        </span>
-      </button>
       <Routes>
         <Route
           path="/"
