@@ -7,7 +7,7 @@ import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient
 import FrostedLoginForm from "./components/FrostedLoginForm";
 import { Scale, BookOpen, ScrollText } from "lucide-react";
 
-function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
+function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
   const navigate = useNavigate();
   const [showInlineLogin, setShowInlineLogin] = useState(false);
 
@@ -71,6 +71,8 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
                const isCast = index > 4;
                const gradStyle = isCast 
                  ? "text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-600 drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]" 
+                 : theme === "light"
+                 ? "text-slate-950 drop-shadow-[0_0_18px_rgba(15,23,42,0.18)]"
                  : "text-transparent bg-clip-text bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]";
 
                return (
@@ -102,12 +104,12 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
                 exit={{ opacity: 0, scale: 0.9, y: -20, filter: 'blur(15px)' }}
                 transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 20 }}
                 onClick={handleGetStarted}
-                className="group relative px-10 py-5 bg-black border border-white/10 hover:border-blue-500/50 rounded-full shadow-[0_0_60px_rgba(0,0,0,0.8)] hover:shadow-[0_0_80px_rgba(59,130,246,0.3)] transition-all duration-500 flex items-center gap-4 overflow-hidden focus:outline-none"
+                className="landing-get-started-btn group relative px-10 py-5 bg-black border border-white/10 hover:border-blue-500/50 rounded-full shadow-[0_0_60px_rgba(0,0,0,0.8)] hover:shadow-[0_0_80px_rgba(59,130,246,0.3)] transition-all duration-500 flex items-center gap-4 overflow-hidden focus:outline-none"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="landing-get-started-overlay absolute inset-0 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 <span className="relative z-10 font-display font-black tracking-[0.15em] uppercase text-sm text-slate-100 group-hover:text-white flex items-center justify-center gap-4">
                   Get Started
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-inner">
+                  <div className="landing-get-started-icon w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-inner">
                     <ChevronRightIcon />
                   </div>
                 </span>
@@ -254,6 +256,7 @@ function App() {
               onSignup={handleSignup}
               onForgot={handleForgotPassword}
               onGoogleAuth={handleGoogleAuth}
+              theme={theme}
             />
           }
         />
