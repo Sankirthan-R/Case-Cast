@@ -21,7 +21,7 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { 
+    visible: {
       opacity: 1,
       transition: { staggerChildren: 0.15, delayChildren: 0.2 }
     }
@@ -29,9 +29,9 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 40, filter: 'blur(10px)', scale: 0.95 },
-    visible: { 
-      opacity: 1, y: 0, filter: 'blur(0px)', scale: 1, 
-      transition: { type: "spring", stiffness: 120, damping: 20 } 
+    visible: {
+      opacity: 1, y: 0, filter: 'blur(0px)', scale: 1,
+      transition: { type: "spring", stiffness: 120, damping: 20 }
     }
   };
 
@@ -48,14 +48,14 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-sky-600/20 rounded-full mix-blend-screen filter blur-[120px]"></div>
         </motion.div>
       </div>
-      
+
       {/* Grid Overlay & Subdued Noise */}
       <div className="fixed inset-0 z-0 bg-[url('/noise.svg')] opacity-[0.06] pointer-events-none"></div>
 
-      <motion.main 
-        variants={containerVariants} 
-        initial="hidden" 
-        animate="visible" 
+      <motion.main
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
         className="relative z-10 w-full max-w-6xl mx-auto px-6 py-12 md:py-16 flex flex-col items-center text-center my-auto min-h-screen justify-center pb-20"
       >
         <motion.div variants={itemVariants} className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-white/5 text-slate-200 text-xs md:text-sm font-semibold tracking-[0.2em] uppercase mb-10 shadow-[0_0_30px_rgba(255,255,255,0.05)] backdrop-blur-xl">
@@ -66,30 +66,30 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
         <motion.div variants={itemVariants} className="mb-8 perspective-1000 w-full">
           <h1 className="font-display flex flex-wrap justify-center items-center py-4 drop-shadow-2xl">
             {"CASE CAST".split("").map((char, index) => {
-               if (char === " ") return <span key={index} className="w-6 md:w-12"></span>;
-               
-               const isCast = index > 4;
-               const gradStyle = isCast 
-                 ? "text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-600 drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]" 
-                 : theme === "light"
-                 ? "text-slate-950 drop-shadow-[0_0_18px_rgba(15,23,42,0.18)]"
-                 : "text-transparent bg-clip-text bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]";
+              if (char === " ") return <span key={index} className="w-6 md:w-12"></span>;
 
-               return (
-                 <motion.span 
-                   key={index}
-                   initial={{ opacity: 0, y: 70, filter: 'blur(20px)', rotateX: -90, scale: 0.8 }}
-                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)', rotateX: 0, scale: 1 }}
-                   transition={{ duration: 1.5, delay: 0.2 + index * 0.1, type: "spring", stiffness: 80, damping: 20 }}
-                   className={`text-[4.5rem] sm:text-[6rem] md:text-[9.5rem] lg:text-[11rem] md:leading-none font-bold tracking-tighter mx-[2px] md:mx-[6px] ${gradStyle}`}
-                 >
-                   {char}
-                 </motion.span>
-               )
+              const isCast = index > 4;
+              const gradStyle = isCast
+                ? "text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-600 drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]"
+                : theme === "light"
+                  ? "text-slate-950 drop-shadow-[0_0_18px_rgba(15,23,42,0.18)]"
+                  : "text-transparent bg-clip-text bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]";
+
+              return (
+                <motion.span
+                  key={index}
+                  initial={{ opacity: 0, y: 70, filter: 'blur(20px)', rotateX: -90, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)', rotateX: 0, scale: 1 }}
+                  transition={{ duration: 1.5, delay: 0.2 + index * 0.1, type: "spring", stiffness: 80, damping: 20 }}
+                  className={`text-[4.5rem] sm:text-[6rem] md:text-[9.5rem] lg:text-[11rem] md:leading-none font-bold tracking-tighter mx-[2px] md:mx-[6px] ${gradStyle}`}
+                >
+                  {char}
+                </motion.span>
+              )
             })}
           </h1>
         </motion.div>
-        
+
         <motion.p variants={itemVariants} className="max-w-3xl text-slate-300 text-lg md:text-2xl leading-relaxed mb-10 font-light tracking-wide shadow-black">
           Leverage advanced machine learning architecture to forecast conviction rates, evaluate risk, and map recidivism with absolute situational awareness.
         </motion.p>
@@ -97,7 +97,7 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
         <motion.div variants={itemVariants} className="relative w-full max-w-md mx-auto flex justify-center mt-4">
           <AnimatePresence mode="wait">
             {!showInlineLogin ? (
-              <motion.button 
+              <motion.button
                 key="btn"
                 initial={{ opacity: 0, scale: 0.8, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -126,14 +126,14 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
               >
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl rounded-[2.5rem] -z-10 shadow-[0_0_100px_rgba(0,0,0,0.9)] border border-white/10"></div>
                 <div className="p-8 md:p-10 relative">
-                   <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
-                   <FrostedLoginForm 
-                     onClose={() => setShowInlineLogin(false)}
-                     onLogin={onLogin}
-                     onSignup={onSignup}
-                     onForgot={onForgot}
-                     onGoogleAuth={onGoogleAuth}
-                   />
+                  <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
+                  <FrostedLoginForm
+                    onClose={() => setShowInlineLogin(false)}
+                    onLogin={onLogin}
+                    onSignup={onSignup}
+                    onForgot={onForgot}
+                    onGoogleAuth={onGoogleAuth}
+                  />
                 </div>
               </motion.div>
             )}
@@ -157,6 +157,7 @@ function App() {
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [theme] = useState("dark");
 
   useEffect(() => {
     if (!hasSupabaseConfig || !supabase) {
@@ -167,10 +168,19 @@ function App() {
     let isActive = true;
 
     const initializeSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (isActive) {
-        setCurrentUser(data.session?.user ?? null);
-        setIsAuthLoading(false);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          // Stale/invalid refresh token — clear and continue as logged out
+          await supabase.auth.signOut();
+        }
+        if (isActive) {
+          setCurrentUser(data?.session?.user ?? null);
+          setIsAuthLoading(false);
+        }
+      } catch (e) {
+        console.warn("Auth session init error:", e);
+        if (isActive) setIsAuthLoading(false);
       }
     };
 
