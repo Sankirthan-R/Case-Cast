@@ -34,6 +34,7 @@ export default function ProfilePage({ user, onLogout }) {
     newPassword: "",
     confirmPassword: "",
   });
+  const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
@@ -120,8 +121,18 @@ export default function ProfilePage({ user, onLogout }) {
       return;
     }
 
+    if (passwordDraft.newPassword.length < 8) {
+      setSaveMessage("New password must be at least 8 characters long.");
+      return;
+    }
+
     if (passwordDraft.newPassword !== passwordDraft.confirmPassword) {
       setSaveMessage("New password and confirmation must match.");
+      return;
+    }
+
+    if (passwordDraft.currentPassword === passwordDraft.newPassword) {
+      setSaveMessage("New password must be different from current password.");
       return;
     }
 
@@ -129,6 +140,21 @@ export default function ProfilePage({ user, onLogout }) {
       if (!supabase) {
         setSaveMessage("Password update requires Supabase configuration.");
         return;
+      }
+
+      if (!user?.email) {
+        setSaveMessage("Unable to verify your account email for password update.");
+        return;
+      }
+
+      setIsPasswordUpdating(true);
+
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordDraft.currentPassword,
+      });
+      if (reauthError) {
+        throw new Error("Current password is incorrect.");
       }
 
       const { error } = await supabase.auth.updateUser({ password: passwordDraft.newPassword });
@@ -140,8 +166,26 @@ export default function ProfilePage({ user, onLogout }) {
     } catch (err) {
       console.error("Failed to update password:", err);
       setSaveMessage(err?.message || "Unable to update password right now.");
+    } finally {
+      setIsPasswordUpdating(false);
     }
   };
+
+  const passwordStrength = useMemo(() => {
+    const pwd = passwordDraft.newPassword || "";
+    if (!pwd) return { label: "", color: "", score: 0 };
+
+    let score = 0;
+    if (pwd.length >= 8) score += 1;
+    if (pwd.length >= 12) score += 1;
+    if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score += 1;
+    if (/\d/.test(pwd)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
+
+    if (score <= 2) return { label: "Weak", color: "text-rose-300", score: 1 };
+    if (score <= 4) return { label: "Medium", color: "text-amber-300", score: 2 };
+    return { label: "Strong", color: "text-emerald-300", score: 3 };
+  }, [passwordDraft.newPassword]);
 
   const activeProfile = isEditing ? draftProfile : profile;
 
@@ -297,6 +341,26 @@ export default function ProfilePage({ user, onLogout }) {
                 value={passwordDraft.newPassword}
                 onChange={(e) => setPasswordDraft((prev) => ({ ...prev, newPassword: e.target.value }))}
               />
+              {passwordStrength.label && (
+                <div className="rounded-lg border border-white/10 bg-slate-900/40 px-3 py-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 uppercase tracking-wider">Password Strength</span>
+                    <span className={`font-semibold ${passwordStrength.color}`}>{passwordStrength.label}</span>
+                  </div>
+                  <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        passwordStrength.score === 1
+                          ? "bg-rose-400"
+                          : passwordStrength.score === 2
+                          ? "bg-amber-400"
+                          : "bg-emerald-400"
+                      }`}
+                      style={{ width: `${(passwordStrength.score / 3) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
               <input
                 type="password"
                 className="input-glass"
@@ -305,12 +369,18 @@ export default function ProfilePage({ user, onLogout }) {
                 onChange={(e) => setPasswordDraft((prev) => ({ ...prev, confirmPassword: e.target.value }))}
               />
               <div className="flex gap-2">
-                <button type="button" onClick={savePassword} className="btn-primary flex-1 text-sm">
-                  Save Password
+                <button
+                  type="button"
+                  onClick={savePassword}
+                  disabled={isPasswordUpdating}
+                  className="btn-primary flex-1 text-sm disabled:opacity-60"
+                >
+                  {isPasswordUpdating ? "Updating..." : "Save Password"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowPasswordFields(false)}
+                  disabled={isPasswordUpdating}
                   className="btn-secondary flex-1 text-sm"
                 >
                   Cancel

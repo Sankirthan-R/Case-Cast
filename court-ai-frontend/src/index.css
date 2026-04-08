@@ -24,27 +24,64 @@
   }
 }
 
-:root {
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
+  --page-bg: #020617;
+  --page-text: #f8fafc;
+  --glass-bg: rgba(15, 23, 42, 0.42);
+  --glass-card-bg: rgba(15, 23, 42, 0.42);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(2, 6, 23, 0.5);
+  --input-text: #f1f5f9;
+  --input-border: rgba(51, 65, 85, 0.5);
+  --secondary-bg: rgba(30, 41, 59, 0.8);
+  --secondary-text: #e2e8f0;
+  --secondary-border: #334155;
+  --bg-orb-a: hsla(253,16%,7%,1);
+  --bg-orb-b: hsla(225,39%,30%,0.2);
+  --bg-orb-c: hsla(339,49%,30%,0.2);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --page-bg: #f8fafc;
+  --page-text: #0f172a;
+  --glass-bg: rgba(255, 255, 255, 0.84);
+  --glass-card-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(15, 23, 42, 0.12);
+  --input-bg: rgba(255, 255, 255, 0.95);
+  --input-text: #0f172a;
+  --input-border: rgba(100, 116, 139, 0.45);
+  --secondary-bg: rgba(241, 245, 249, 0.95);
+  --secondary-text: #0f172a;
+  --secondary-border: rgba(100, 116, 139, 0.5);
+  --bg-orb-a: hsla(205,100%,97%,1);
+  --bg-orb-b: hsla(199,89%,84%,0.45);
+  --bg-orb-c: hsla(243,75%,88%,0.4);
 }
 
 body {
-  background-color: var(--color-slate-950);
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-    radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+  background-color: var(--page-bg);
+  background-image:
+    radial-gradient(at 0% 0%, var(--bg-orb-a) 0, transparent 50%),
+    radial-gradient(at 50% 0%, var(--bg-orb-b) 0, transparent 50%),
+    radial-gradient(at 100% 0%, var(--bg-orb-c) 0, transparent 50%);
   background-attachment: fixed;
-  color: theme('colors.slate.50');
+  color: var(--page-text);
 }
 
 /* Glass panel utilities */
 .glass-panel {
-  @apply bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl;
+  background: var(--glass-bg);
+  @apply backdrop-blur-xl border shadow-2xl;
+  border-color: var(--glass-border);
 }
 
 .glass-card {
-  @apply bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl shadow-xl transition-all duration-300;
+  background: var(--glass-card-bg);
+  @apply backdrop-blur-md border rounded-2xl shadow-xl transition-all duration-300;
+  border-color: color-mix(in srgb, var(--glass-border) 80%, transparent);
 }
 
 .glass-card:hover {
@@ -56,7 +93,10 @@ body {
 }
 
 .input-glass {
-  @apply bg-slate-950/50 border border-slate-700/50 rounded-lg px-4 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all w-full;
+  background: var(--input-bg);
+  color: var(--input-text);
+  @apply border rounded-lg px-4 py-2.5 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all w-full;
+  border-color: var(--input-border);
 }
 
 .btn-primary {
@@ -64,5 +104,58 @@ body {
 }
 
 .btn-secondary {
-  @apply relative overflow-hidden rounded-xl bg-slate-800/80 border border-slate-700 px-6 py-3 font-semibold text-slate-200 transition-all hover:bg-slate-700/80 hover:scale-[1.02] active:scale-[0.98];
+  background: var(--secondary-bg);
+  color: var(--secondary-text);
+  border-color: var(--secondary-border);
+  @apply relative overflow-hidden rounded-xl border px-6 py-3 font-semibold transition-all hover:scale-[1.02] active:scale-[0.98];
+}
+
+.theme-toggle {
+  @apply inline-flex items-center gap-2 rounded-full border px-3 py-2 backdrop-blur-xl transition-all;
+  background: var(--glass-card-bg);
+  border-color: var(--glass-border);
+  color: var(--page-text);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+.theme-toggle:hover {
+  box-shadow: 0 0 26px rgba(6, 182, 212, 0.3);
+}
+
+/* Light-mode class harmonization for existing dark-first utility classes */
+[data-theme="light"] [class*="bg-black"] {
+  background-color: rgba(248, 250, 252, 0.9) !important;
+}
+
+[data-theme="light"] [class*="text-white"] {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] [class*="text-slate-500"] {
+  color: #64748b !important;
+}
+
+[data-theme="light"] [class*="text-slate-400"] {
+  color: #475569 !important;
+}
+
+[data-theme="light"] [class*="text-slate-300"],
+[data-theme="light"] [class*="text-slate-200"] {
+  color: #334155 !important;
+}
+
+[data-theme="light"] [class*="border-white"] {
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] [class*="bg-white/5"] {
+  background-color: rgba(148, 163, 184, 0.1) !important;
+}
+
+[data-theme="light"] [class*="bg-white/10"] {
+  background-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+[data-theme="light"] [class*="drop-shadow"] {
+  filter: drop-shadow(0 8px 20px rgba(15, 23, 42, 0.12));
 }

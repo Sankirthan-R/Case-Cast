@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 import MainPortal from "./pages/MainPortal";
 import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient";
 import FrostedLoginForm from "./components/FrostedLoginForm";
-import { Scale, BookOpen, ScrollText } from "lucide-react";
+import { MoonStar, Scale, Sun } from "lucide-react";
 
 function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
   const navigate = useNavigate();
@@ -168,6 +168,12 @@ function App() {
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem("casecast-theme") || "dark");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("casecast-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!hasSupabaseConfig || !supabase) {
@@ -256,6 +262,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black text-slate-50 selection:bg-cyan-500/30">
+      <button
+        type="button"
+        onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+        className="theme-toggle fixed top-4 right-4 z-[120]"
+      >
+        {theme === "dark" ? <Sun className="w-4 h-4" /> : <MoonStar className="w-4 h-4" />}
+        <span className="text-xs font-semibold tracking-wide">
+          {theme === "dark" ? "Light" : "Dark"}
+        </span>
+      </button>
       <Routes>
         <Route
           path="/"
