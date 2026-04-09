@@ -10,7 +10,7 @@ import PredictPage from "./portal/PredictPage";
 import LogsPage from "./portal/LogsPage";
 import ProfilePage from "./portal/ProfilePage";
 
-export default function MainPortal({ user, onLogout }) {
+export default function MainPortal({ user, onLogout, theme, setTheme }) {
   const [activeTab, setActiveTab] = useState("home");
   const [castingInputs, setCastingInputs] = useState(initialCastingInputs);
   const [result, setResult] = useState(null);
@@ -112,6 +112,8 @@ export default function MainPortal({ user, onLogout }) {
       stats={stats}
       showProfileMenu={showProfileMenu}
       setShowProfileMenu={setShowProfileMenu}
+      theme={theme}
+      setTheme={setTheme}
     >
       <AnimatePresence mode="wait">
         {activeTab === "home" && (

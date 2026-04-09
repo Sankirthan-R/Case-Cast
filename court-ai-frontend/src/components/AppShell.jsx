@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, ChevronDown, History, Home, LogOut, Scale, Sparkles, UserRound } from "lucide-react";
+import { Activity, ChevronDown, History, Home, LogOut, MoonStar, Scale, Sparkles, Sun, UserRound } from "lucide-react";
 
 const navItems = [
   { key: "home",    label: "Dashboard", icon: Home },
@@ -20,6 +20,8 @@ export default function AppShell({
   stats,
   showProfileMenu,
   setShowProfileMenu,
+  theme,
+  setTheme,
   children,
 }) {
   const authProvider = (user?.app_metadata?.provider || "email").toUpperCase();
@@ -110,6 +112,19 @@ export default function AppShell({
                   <span className="text-xs text-slate-400">Total Predictions</span>
                   <span className="text-sm font-bold text-cyan-400">{stats.totalCasts}</span>
                 </div>
+                
+                <div className="flex justify-between items-center mb-4 border-b border-white/5 pb-4">
+                  <span className="text-xs text-slate-400">Theme</span>
+                  <button
+                    type="button"
+                    onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm text-slate-200 border border-white/5"
+                  >
+                    {theme === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <MoonStar className="w-4 h-4 text-indigo-400" />}
+                    <span>{theme === "dark" ? "Light" : "Dark"} Mode</span>
+                  </button>
+                </div>
+
                 <button
                   onClick={onLogout}
                   className="w-full py-2 bg-rose-500/10 text-rose-400 rounded-lg text-sm text-center font-medium hover:bg-rose-500/20 transition-colors"

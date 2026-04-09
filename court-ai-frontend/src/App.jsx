@@ -260,17 +260,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black text-slate-50 selection:bg-cyan-500/30">
-      <button
-        type="button"
-        onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
-        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-        className="theme-toggle fixed top-4 right-4 z-[120]"
-      >
-        {theme === "dark" ? <Sun className="w-4 h-4" /> : <MoonStar className="w-4 h-4" />}
-        <span className="text-xs font-semibold tracking-wide">
-          {theme === "dark" ? "Light" : "Dark"}
-        </span>
-      </button>
       <Routes>
         <Route
           path="/"
@@ -302,7 +291,7 @@ function App() {
           path="/app"
           element={
             currentUser || !hasSupabaseConfig ? (
-              <MainPortal user={currentUser} onLogout={handleLogout} />
+              <MainPortal user={currentUser} onLogout={handleLogout} theme={theme} setTheme={setTheme} />
             ) : (
               <Navigate to="/login" replace />
             )
