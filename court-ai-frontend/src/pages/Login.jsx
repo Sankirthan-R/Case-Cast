@@ -7,7 +7,7 @@ export default function Login({ user, onLogin, onSignup, onForgot, onGoogleAuth 
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
+    if (user && !window.location.hash.includes("type=recovery")) {
       navigate("/app", { replace: true });
     }
   }, [user, navigate]);

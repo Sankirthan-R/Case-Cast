@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
 import MainPortal from "./pages/MainPortal";
+import UpdatePassword from "./pages/UpdatePassword";
 import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient";
 import FrostedLoginForm from "./components/FrostedLoginForm";
 import { Scale, BookOpen, ScrollText } from "lucide-react";
@@ -180,8 +181,11 @@ function App() {
 
     initializeSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setCurrentUser(session?.user ?? null);
+      if (event === "PASSWORD_RECOVERY") {
+        navigate("/update-password");
+      }
       setIsAuthLoading(false);
     });
 
@@ -224,7 +228,7 @@ function App() {
   const handleForgotPassword = async ({ email }) => {
     if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/update-password`,
     });
     if (error) throw error;
     return { message: "Password reset email sent." };
@@ -285,6 +289,7 @@ function App() {
             )
           }
         />
+        <Route path="/update-password" element={<UpdatePassword />} />
       </Routes>
     </div>
   );
