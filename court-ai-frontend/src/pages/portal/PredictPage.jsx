@@ -118,12 +118,12 @@ export default function PredictPage({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <label className="flex flex-col gap-1.5">
                   <span className="text-[13px] uppercase font-bold text-slate-400 tracking-wider">Age (18+)</span>
-                  <input name="age" type="number" min="18" max="120" className="input-glass bg-slate-900/60 py-2 px-3 text-sm" placeholder="e.g. 35" value={castingInputs.age} onChange={e => updateCastingInput("age", e.target.value)} />
+                  <input name="age" type="number" min="18" max="90" className="input-glass bg-slate-900/60 py-2 px-3 text-sm" placeholder="e.g. 35" value={castingInputs.age} onChange={e => updateCastingInput("age", e.target.value)} />
                 </label>
                 <label className="flex flex-col gap-1.5">
                   <span className="text-[13px] uppercase font-bold text-slate-400 tracking-wider">Sex</span>
                   <select name="sex" className="input-glass bg-slate-900/60 py-2 px-2 text-sm" value={castingInputs.sex} onChange={e => updateCastingInput("sex", e.target.value)}>
-                    <option value="">Sel</option>
+                    <option value="">Select</option>
                     <option value="M">M</option>
                     <option value="F">F</option>
                   </select>
@@ -232,17 +232,16 @@ export default function PredictPage({
 
               {/* Summary Banner */}
               <div
-                className={`aggregate-risk-banner p-10 rounded-3xl border shadow-2xl relative overflow-hidden backdrop-blur-xl ${
-                result.summary.outcome.includes("High") ? "bg-rose-950/20 border-rose-500/50 shadow-rose-500/20" :
-                result.summary.outcome.includes("Moderate") ? "bg-amber-950/20 border-amber-500/50 shadow-amber-500/20" :
-                "bg-emerald-950/20 border-emerald-500/50 shadow-emerald-500/20"
-              }`}
+                className={`aggregate-risk-banner p-10 rounded-3xl border shadow-2xl relative overflow-hidden backdrop-blur-xl ${result.summary.outcome.includes("High") ? "bg-rose-950/20 border-rose-500/50 shadow-rose-500/20" :
+                  result.summary.outcome.includes("Moderate") ? "bg-amber-950/20 border-amber-500/50 shadow-amber-500/20" :
+                    "bg-emerald-950/20 border-emerald-500/50 shadow-emerald-500/20"
+                  }`}
                 data-risk={
                   result.summary.outcome.includes("High")
                     ? "high"
                     : result.summary.outcome.includes("Moderate")
-                    ? "moderate"
-                    : "low"
+                      ? "moderate"
+                      : "low"
                 }
               >
                 <div className="absolute -right-10 -top-10 opacity-10">

@@ -57,6 +57,39 @@ export default function MainPortal({ user, onLogout, theme, setTheme }) {
       return;
     }
 
+    // ── Logical Validations ──────────────────────────────────────────
+    if (parsed.age > 90) {
+      setFormError("Age cannot exceed 90 years.");
+      return;
+    }
+
+    const juvenileTotal =
+      parsed.juvenileFelonyCount + parsed.juvenileMisdemeanorCount + parsed.juvenileOtherCount;
+    if (parsed.priorOffenses < juvenileTotal) {
+      setFormError(
+        `Prior offenses (${parsed.priorOffenses}) must be ≥ total juvenile counts (${juvenileTotal} = felony + misdemeanor + other).`
+      );
+      return;
+    }
+
+    const maxJailDays = parsed.age * 365;
+    if (parsed.jailDurationDays >= maxJailDays) {
+      setFormError(
+        `Jail duration (${parsed.jailDurationDays} days) cannot exceed the person's lifetime (${maxJailDays} days for age ${parsed.age}).`
+      );
+      return;
+    }
+
+    if (parsed.daysBetweenArrestAndScreening < -10000 || parsed.daysBetweenArrestAndScreening > 15000) {
+      setFormError("Arrest to screening days must be between -10000 and 15000.");
+      return;
+    }
+
+    if (parsed.daysFromOffenseToScreen < -10000 || parsed.daysFromOffenseToScreen > 15000) {
+      setFormError("Days from offense to screening must be between -10000 and 15000.");
+      return;
+    }
+
     setIsPredicting(true);
     setFormError("");
 

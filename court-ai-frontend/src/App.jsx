@@ -1,13 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
 import MainPortal from "./pages/MainPortal";
 import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient";
 import FrostedLoginForm from "./components/FrostedLoginForm";
-import { MoonStar, Scale, Sun } from "lucide-react";
+import { Scale, BookOpen, ScrollText } from "lucide-react";
 
-function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
+function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
   const navigate = useNavigate();
   const [showInlineLogin, setShowInlineLogin] = useState(false);
 
@@ -71,9 +71,7 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
               const isCast = index > 4;
               const gradStyle = isCast
                 ? "text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 via-blue-500 to-indigo-600 drop-shadow-[0_0_40px_rgba(59,130,246,0.5)]"
-                : theme === "light"
-                  ? "text-slate-950 drop-shadow-[0_0_18px_rgba(15,23,42,0.18)]"
-                  : "text-transparent bg-clip-text bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]";
+                : "text-transparent bg-clip-text bg-gradient-to-br from-slate-100 via-slate-300 to-slate-500 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]";
 
               return (
                 <motion.span
@@ -104,12 +102,12 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth, theme }) {
                 exit={{ opacity: 0, scale: 0.9, y: -20, filter: 'blur(15px)' }}
                 transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 20 }}
                 onClick={handleGetStarted}
-                className="landing-get-started-btn group relative px-10 py-5 bg-black border border-white/10 hover:border-blue-500/50 rounded-full shadow-[0_0_60px_rgba(0,0,0,0.8)] hover:shadow-[0_0_80px_rgba(59,130,246,0.3)] transition-all duration-500 flex items-center gap-4 overflow-hidden focus:outline-none"
+                className="group relative px-10 py-5 bg-black border border-white/10 hover:border-blue-500/50 rounded-full shadow-[0_0_60px_rgba(0,0,0,0.8)] hover:shadow-[0_0_80px_rgba(59,130,246,0.3)] transition-all duration-500 flex items-center gap-4 overflow-hidden focus:outline-none"
               >
-                <div className="landing-get-started-overlay absolute inset-0 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 <span className="relative z-10 font-display font-black tracking-[0.15em] uppercase text-sm text-slate-100 group-hover:text-white flex items-center justify-center gap-4">
                   Get Started
-                  <div className="landing-get-started-icon w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-inner">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300 shadow-inner">
                     <ChevronRightIcon />
                   </div>
                 </span>
@@ -157,11 +155,11 @@ function App() {
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [theme, setTheme] = useState(() => localStorage.getItem("casecast-theme") || "dark");
+  const [theme, setTheme] = useState(() => localStorage.getItem("cc-theme") || "dark");
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("casecast-theme", theme);
+    localStorage.setItem("cc-theme", theme);
   }, [theme]);
 
   useEffect(() => {
@@ -173,19 +171,10 @@ function App() {
     let isActive = true;
 
     const initializeSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          // Stale/invalid refresh token — clear and continue as logged out
-          await supabase.auth.signOut();
-        }
-        if (isActive) {
-          setCurrentUser(data?.session?.user ?? null);
-          setIsAuthLoading(false);
-        }
-      } catch (e) {
-        console.warn("Auth session init error:", e);
-        if (isActive) setIsAuthLoading(false);
+      const { data } = await supabase.auth.getSession();
+      if (isActive) {
+        setCurrentUser(data.session?.user ?? null);
+        setIsAuthLoading(false);
       }
     };
 
@@ -271,7 +260,6 @@ function App() {
               onSignup={handleSignup}
               onForgot={handleForgotPassword}
               onGoogleAuth={handleGoogleAuth}
-              theme={theme}
             />
           }
         />

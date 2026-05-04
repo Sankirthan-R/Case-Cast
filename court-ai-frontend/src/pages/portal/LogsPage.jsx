@@ -15,7 +15,7 @@ export default function LogsPage({ historyItems, onRefresh }) {
       {/* Header */}
       <div className="flex justify-between items-end border-b border-white/10 pb-4">
         <div>
-          <h2 className="text-3xl font-display font-bold text-white tracking-tight">Audit Logs</h2>
+          <h2 className="text-3xl font-display font-bold text-white tracking-tight">Search Logs</h2>
           <p className="text-slate-400 mt-2">Historical inference data and prediction payloads.</p>
         </div>
         <div className="flex items-center gap-4">
@@ -51,11 +51,10 @@ export default function LogsPage({ historyItems, onRefresh }) {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3">
                   <span
-                    className={`w-3 h-3 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.2)] ${
-                      item.outcome?.includes("High") ? "bg-rose-500" :
+                    className={`w-3 h-3 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.2)] ${item.outcome?.includes("High") ? "bg-rose-500" :
                       item.outcome?.includes("Moderate") ? "bg-amber-500" :
-                      "bg-emerald-500"
-                    }`}
+                        "bg-emerald-500"
+                      }`}
                   />
                   <span className="font-display font-semibold text-lg text-white">{item.outcome}</span>
                   <span className="text-xs text-slate-500 font-mono">
