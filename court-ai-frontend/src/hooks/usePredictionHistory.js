@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchHistory } from "../api/predict";
-import { supabase } from "../supabaseClient";
 
 /**
  * Custom hook to manage prediction history state.
- * Fetches from backend API (which uses service-role client, bypassing RLS).
+ * Fetches from backend API using stored JWT.
  * Falls back to localStorage when user is not authenticated.
  */
 export function usePredictionHistory(user) {
@@ -12,22 +11,23 @@ export function usePredictionHistory(user) {
 
   const refreshHistory = useCallback(async () => {
     try {
-      if (!supabase || !user?.id) {
+      const token = localStorage.getItem("casecast-token");
+      if (!token || !user?.id) {
         const stored = localStorage.getItem("casecast-history");
         if (stored) setHistoryItems(JSON.parse(stored));
         return;
       }
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      if (!token) return;
       const rows = await fetchHistory(token);
       setHistoryItems(rows);
     } catch (e) {
       console.error("Failed to load history:", e);
-      // Fallback to localStorage on any error
       const stored = localStorage.getItem("casecast-history");
       if (stored) {
-        try { setHistoryItems(JSON.parse(stored)); } catch {}
+        try {
+          setHistoryItems(JSON.parse(stored));
+        } catch (parseErr) {
+          console.debug(parseErr);
+        }
       }
     }
   }, [user]);
@@ -35,13 +35,37 @@ export function usePredictionHistory(user) {
   // Initial load on mount / user change
   useEffect(() => {
     let active = true;
-    refreshHistory().then(() => {}).catch(() => {});
-    return () => { active = false; };
-  }, [refreshHistory]);
+    const load = async () => {
+      try {
+        const token = localStorage.getItem("casecast-token");
+        if (!token || !user?.id) {
+          const stored = localStorage.getItem("casecast-history");
+          if (stored && active) setHistoryItems(JSON.parse(stored));
+          return;
+        }
+        const rows = await fetchHistory(token);
+        if (active) setHistoryItems(rows);
+      } catch (e) {
+        console.error("Failed to load history:", e);
+        const stored = localStorage.getItem("casecast-history");
+        if (stored && active) {
+          try {
+            setHistoryItems(JSON.parse(stored));
+          } catch (parseErr) {
+            console.debug(parseErr);
+          }
+        }
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   // Persist to localStorage when no auth
   useEffect(() => {
-    if (!supabase || !user?.id) {
+    if (!user?.id) {
       localStorage.setItem("casecast-history", JSON.stringify(historyItems));
     }
   }, [historyItems, user]);

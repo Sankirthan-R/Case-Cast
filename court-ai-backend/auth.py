@@ -1,75 +1,65 @@
-from __future__ import annotations
-
-from typing import Any, Dict
-
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from supabase_clients import SupabaseClients
+
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8"),
+        )
+    except Exception:
+        return False
+
+
+def create_access_token(user_id: int, email: str, secret: str, expire_hours: int = 12) -> str:
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": str(user_id),
+        "user_id": user_id,
+        "email": email,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(hours=expire_hours)).timestamp()),
+    }
+    return jwt.encode(payload, secret, algorithm="HS256")
+
+
+def decode_access_token(token: str, secret: str) -> dict:
+    try:
+        payload = jwt.decode(token, secret, algorithms=["HS256"])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+# auto_error=False so missing credentials cleanly raises 401 (never 403)
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-class AuthService:
-    def __init__(self, clients: SupabaseClients) -> None:
-        self.clients = clients
-
-    def signup(self, email: str, password: str, username: str | None = None) -> Dict[str, Any]:
-        response = self.clients.anon.auth.sign_up(
-            {
-                "email": email,
-                "password": password,
-                "options": {"data": {"username": username or ""}},
-            }
+def get_bearer_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)) -> str:
+    if not credentials or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        if getattr(response, "user", None) is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Signup failed")
-
-        return {
-            "user": {
-                "id": response.user.id,
-                "email": response.user.email,
-            },
-            "session": {
-                "access_token": getattr(getattr(response, "session", None), "access_token", None),
-                "refresh_token": getattr(getattr(response, "session", None), "refresh_token", None),
-            },
-            "message": "User created. If email confirmation is enabled, verify your inbox.",
-        }
-
-    def login(self, email: str, password: str) -> Dict[str, Any]:
-        response = self.clients.anon.auth.sign_in_with_password({"email": email, "password": password})
-        if getattr(response, "session", None) is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-
-        return {
-            "access_token": response.session.access_token,
-            "refresh_token": response.session.refresh_token,
-            "token_type": "bearer",
-            "expires_in": response.session.expires_in,
-            "user": {
-                "id": response.user.id,
-                "email": response.user.email,
-            },
-        }
-
-    def validate_access_token(self, token: str) -> Dict[str, Any]:
-        response = self.clients.anon.auth.get_user(token)
-        user = getattr(response, "user", None)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
-        return {
-            "id": user.id,
-            "email": user.email,
-            "raw": user,
-        }
-
-
-
-def get_bearer_token(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-) -> str:
-    if credentials is None or not credentials.credentials:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
     return credentials.credentials

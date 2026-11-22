@@ -1,13 +1,16 @@
 import { motion } from "framer-motion";
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import FrostedLoginForm from "../components/FrostedLoginForm";
 
-export default function Login({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
+export default function Login({ user, onLogin, onSignup }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const authRequiredNotice = searchParams.get("msg") === "auth_required";
 
   useEffect(() => {
-    if (user && !window.location.hash.includes("type=recovery")) {
+    if (user) {
       navigate("/app", { replace: true });
     }
   }, [user, navigate]);
@@ -17,9 +20,12 @@ export default function Login({ user, onLogin, onSignup, onForgot, onGoogleAuth 
       {/* Dynamic Background Mesh */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-900/40 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-900/40 rounded-full mix-blend-screen filter blur-[150px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div
+          className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-900/40 rounded-full mix-blend-screen filter blur-[150px] animate-pulse"
+          style={{ animationDelay: "2s" }}
+        ></div>
       </div>
-      
+
       {/* Grid Overlay */}
       <div className="absolute inset-0 z-0 bg-[url('/noise.svg')] opacity-[0.04]"></div>
 
@@ -30,9 +36,14 @@ export default function Login({ user, onLogin, onSignup, onForgot, onGoogleAuth 
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="glass-panel p-8 rounded-3xl relative overflow-hidden group border-white/10 hover:border-cyan-500/30 transition-colors duration-500">
-          {/* subtle glow border effect top */}
           <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
-          
+
+          {authRequiredNotice && (
+            <div className="mb-6 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs text-center font-medium">
+              Create an account and log in to use the model
+            </div>
+          )}
+
           <FrostedLoginForm
             title="Login"
             subtitle="Welcome to CaseCast"
@@ -40,8 +51,6 @@ export default function Login({ user, onLogin, onSignup, onForgot, onGoogleAuth 
             onHome={() => navigate("/")}
             onLogin={onLogin}
             onSignup={onSignup}
-            onForgot={onForgot}
-            onGoogleAuth={onGoogleAuth}
           />
         </div>
       </motion.div>

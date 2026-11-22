@@ -1,6 +1,13 @@
 # Root dependencies
 node_modules/
 
+# Python virtual environment & cache
+.venv/
+venv/
+ENV/
+__pycache__/
+*.pyc
+
 # Root logs
 *.log
 npm-debug.log*
@@ -20,6 +27,11 @@ court-ai-frontend/dist-ssr/
 court-ai-frontend/coverage/
 court-ai-frontend/.vite/
 court-ai-frontend/.cache/
+
+# Backend artifacts
+court-ai-backend/.venv/
+court-ai-backend/__pycache__/
+court-ai-backend/*.pyc
 
 # Editor/OS
 .DS_Store

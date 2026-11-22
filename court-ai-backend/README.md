@@ -1,64 +1,80 @@
-# court-ai-backend
+# CaseCast Backend (FastAPI + MySQL)
 
-Production-oriented FastAPI backend for CaseCast with Supabase Auth + interaction history.
+FastAPI-powered judicial intelligence service providing risk assessments across conviction, charge severity, and recidivism using scikit-learn models, backed by MySQL 8.4 and JWT authentication.
 
-## Architecture
-- Stateless API (`fastapi_app.py`) with clear service boundaries.
-- Auth service (`auth.py`) handles signup/login and JWT validation.
-- ML service (`model_service.py`) remains isolated from auth/data concerns.
-- History service (`history_service.py`) persists ML interaction logs asynchronously.
-- Supabase clients (`supabase_clients.py`) provide separate anon/service-role usage.
+## Architecture & Tech Stack
 
-## Security model
-- Secrets are loaded from `court-ai-backend/.env` only.
-- `SUPABASE_SERVICE_ROLE_KEY` is server-only; never exposed to frontend.
-- Protected routes require bearer JWT validation using Supabase Auth.
+- **API Framework:** FastAPI with Uvicorn
+- **Database:** MySQL 8.4 (InnoDB) running via Docker
+- **Query Layer:** Raw SQL executed via SQLAlchemy 2.0 Engine & PyMySQL (`text()` parameterised queries, no ORM)
+- **Authentication:** Custom bcrypt password hashing + PyJWT (HS256 Bearer tokens, 12h expiry)
+- **Machine Learning:** Scikit-learn pipelines with Joblib serialized models trained on COMPAS dataset
 
-## Environment setup
-1. Copy/edit `court-ai-backend/.env`.
-2. Set values for:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-3. Optional overrides:
-   - `COMPAS_CSV_PATH`
-   - `ARTIFACT_PATH`
-   - `HISTORY_TABLE`
-   - `SLOW_QUERY_MS`
+## Database Schema
 
-## Database setup
-Run SQL in `court-ai-backend/sql/001_prediction_history.sql`.
+- `users`: ID, full_name, email, password_hash, role (Citizen, Lawyer, Judge, Researcher), phone, address, created_at
+- `cases`: case_id, user_id, age, sex, priors_count, jail_days, juvenile offenses, screening delays, created_at
+- `predictions`: case_id, task (conviction, severity, recidivism), probability, predicted_label, latency_ms (PK: `case_id` + `task`)
+- `audit_logs`: log_id, user_id, action, details, logged_at
+- `v_user_history`: View joining cases with their three task predictions
+- `trg_case_audit`: Trigger auditing new case predictions
+- `sp_user_summary`: Stored procedure summarizing user case metrics
 
-It creates:
-- `prediction_history` table linked to `auth.users(id)`
-- indexes on `user_id`, `created_at`, and `metadata->>'model_used'`
-- RLS policies for per-user read/insert
+## Environment Setup
 
-## Install and run
+Create `.env` in `court-ai-backend/` (refer to `.env.example`):
+
 ```bash
-pip install -r requirements.txt
-uvicorn fastapi_app:app --host 127.0.0.1 --port 8000 --reload
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=casecast
+DB_USER=casecast_app
+DB_PASSWORD=your_db_password
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRE_HOURS=12
+SLOW_QUERY_MS=250
 ```
 
-## API overview
+## Running the Backend
 
-### Public routes
-- `GET /api/health`
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
+```bash
+# Activate virtual environment
+source ../.venv/Scripts/activate  # or .venv\Scripts\Activate.ps1 on Windows
 
-### Protected routes (Bearer token required)
-- `GET /api/auth/me`
-- `POST /api/predict`
-- `GET /api/history?page=1&page_size=20&model_used=...&from_ts=...&to_ts=...`
-- `GET /api/model-info`
+# Install dependencies
+pip install -r requirements.txt
 
-## Async ML interaction logging
-- `POST /api/predict` returns prediction immediately.
-- History insert runs in `BackgroundTasks` (non-blocking).
-- Insert failures are logged and do not fail prediction responses.
+# Run server with reload
+uvicorn fastapi_app:app --port 8000 --reload
+```
 
-## Observability hooks
-- Structured logger namespaces (`casecast.api`, `casecast.history`).
-- Slow-query warnings for history writes/reads using `SLOW_QUERY_MS`.
-- Error logs for failed prediction/history operations.
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/signup` - Register user (`email`, `password`, `full_name`, `role`) -> returns Bearer JWT + profile
+- `POST /api/auth/login` - Authenticate (`email`, `password`) -> returns Bearer JWT + profile
+
+### User Profile
+- `GET /api/users/me` - Current user profile
+- `PUT /api/users/me` - Update profile (`full_name`, `role`, `phone`, `address`)
+- `DELETE /api/users/me` - Delete account
+- `PUT /api/users/me/password` - Change password (`current_password`, `new_password`)
+
+### Predictions & History
+- `POST /api/predict` - Run 3-task ML inference; auto-saves case & predictions in one transaction if authenticated
+- `GET /api/history` - Paginated prediction history (`page`, `page_size`)
+- `GET /api/history/{case_id}` - Fetch single case details
+- `DELETE /api/history/{case_id}` - Delete case (cascades to predictions)
+
+### Analytics & System
+- `GET /api/analytics/summary` - Stored procedure summary, recidivism risk by age band, latency by task
+- `GET /api/model-info` - Metadata & metrics on trained models
+- `GET /api/health` - Check API and MySQL connectivity
+
+## Database Seeding
+
+To seed ~20 demo users (password: `CaseCast2026!`) and ~300 cases:
+
+```bash
+python scripts/seed.py
+```

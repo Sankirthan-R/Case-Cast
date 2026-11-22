@@ -1,14 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import Login from "./pages/Login";
 import MainPortal from "./pages/MainPortal";
-import UpdatePassword from "./pages/UpdatePassword";
-import { hasSupabaseConfig, supabase, supabaseInitError } from "./supabaseClient";
 import FrostedLoginForm from "./components/FrostedLoginForm";
-import { Scale, BookOpen, ScrollText } from "lucide-react";
 
-function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+function Landing({ user, onLogin, onSignup }) {
   const navigate = useNavigate();
   const [showInlineLogin, setShowInlineLogin] = useState(false);
 
@@ -17,34 +16,45 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
       navigate("/app");
       return;
     }
-    setShowInlineLogin(true);
+    navigate("/login?msg=auth_required");
   };
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.15, delayChildren: 0.2 }
-    }
+      transition: { staggerChildren: 0.15, delayChildren: 0.2 },
+    },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 40, filter: 'blur(10px)', scale: 0.95 },
+    hidden: { opacity: 0, y: 40, filter: "blur(10px)", scale: 0.95 },
     visible: {
-      opacity: 1, y: 0, filter: 'blur(0px)', scale: 1,
-      transition: { type: "spring", stiffness: 120, damping: 20 }
-    }
+      opacity: 1,
+      y: 0,
+      filter: "blur(0px)",
+      scale: 1,
+      transition: { type: "spring", stiffness: 120, damping: 20 },
+    },
   };
 
   return (
     <div className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden font-sans bg-black selection:bg-cyan-500/30 text-white">
       {/* Futuristic Royal Blue / Cyan Nebula Background */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-black">
-        <motion.div animate={{ rotate: 360, scale: [1, 1.05, 1] }} transition={{ duration: 60, repeat: Infinity, ease: "linear" }} className="absolute top-[-20%] left-[-20%] w-[100vw] h-[100vw] opacity-[0.5]">
+        <motion.div
+          animate={{ rotate: 360, scale: [1, 1.05, 1] }}
+          transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[-20%] left-[-20%] w-[100vw] h-[100vw] opacity-[0.5]"
+        >
           <div className="absolute top-[20%] right-[30%] w-[600px] h-[600px] bg-blue-600/30 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"></div>
           <div className="absolute bottom-[20%] left-[20%] w-[700px] h-[700px] bg-cyan-800/30 rounded-full mix-blend-screen filter blur-[150px]"></div>
         </motion.div>
-        <motion.div animate={{ rotate: -360, scale: [1, 1.1, 1] }} transition={{ duration: 80, repeat: Infinity, ease: "linear" }} className="absolute bottom-[-10%] right-[-20%] w-[100vw] h-[100vw] opacity-[0.4]">
+        <motion.div
+          animate={{ rotate: -360, scale: [1, 1.1, 1] }}
+          transition={{ duration: 80, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-[-10%] right-[-20%] w-[100vw] h-[100vw] opacity-[0.4]"
+        >
           <div className="absolute bottom-1/4 right-1/4 w-[700px] h-[700px] bg-indigo-700/30 rounded-full mix-blend-screen filter blur-[150px] animate-pulse"></div>
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-sky-600/20 rounded-full mix-blend-screen filter blur-[120px]"></div>
         </motion.div>
@@ -59,7 +69,10 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
         animate="visible"
         className="relative z-10 w-full max-w-6xl mx-auto px-6 py-12 md:py-16 flex flex-col items-center text-center my-auto min-h-screen justify-center pb-20"
       >
-        <motion.div variants={itemVariants} className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-white/5 text-slate-200 text-xs md:text-sm font-semibold tracking-[0.2em] uppercase mb-10 shadow-[0_0_30px_rgba(255,255,255,0.05)] backdrop-blur-xl">
+        <motion.div
+          variants={itemVariants}
+          className="inline-flex items-center gap-3 px-6 py-3 rounded-full border border-white/10 bg-white/5 text-slate-200 text-xs md:text-sm font-semibold tracking-[0.2em] uppercase mb-10 shadow-[0_0_30px_rgba(255,255,255,0.05)] backdrop-blur-xl"
+        >
           <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.8)] animate-pulse"></span>
           Supreme Legal Intelligence
         </motion.div>
@@ -77,19 +90,22 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
               return (
                 <motion.span
                   key={index}
-                  initial={{ opacity: 0, y: 70, filter: 'blur(20px)', rotateX: -90, scale: 0.8 }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)', rotateX: 0, scale: 1 }}
+                  initial={{ opacity: 0, y: 70, filter: "blur(20px)", rotateX: -90, scale: 0.8 }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)", rotateX: 0, scale: 1 }}
                   transition={{ duration: 1.5, delay: 0.2 + index * 0.1, type: "spring", stiffness: 80, damping: 20 }}
                   className={`text-[4.5rem] sm:text-[6rem] md:text-[9.5rem] lg:text-[11rem] md:leading-none font-bold tracking-tighter mx-[2px] md:mx-[6px] ${gradStyle}`}
                 >
                   {char}
                 </motion.span>
-              )
+              );
             })}
           </h1>
         </motion.div>
 
-        <motion.p variants={itemVariants} className="max-w-3xl text-slate-300 text-lg md:text-2xl leading-relaxed mb-10 font-light tracking-wide shadow-black">
+        <motion.p
+          variants={itemVariants}
+          className="max-w-3xl text-slate-300 text-lg md:text-2xl leading-relaxed mb-10 font-light tracking-wide shadow-black"
+        >
           Leverage advanced machine learning architecture to forecast conviction rates, evaluate risk, and map recidivism with absolute situational awareness.
         </motion.p>
 
@@ -100,7 +116,7 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
                 key="btn"
                 initial={{ opacity: 0, scale: 0.8, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: -20, filter: 'blur(15px)' }}
+                exit={{ opacity: 0, scale: 0.9, y: -20, filter: "blur(15px)" }}
                 transition={{ duration: 0.4, type: "spring", stiffness: 200, damping: 20 }}
                 onClick={handleGetStarted}
                 className="group relative px-10 py-5 bg-black border border-white/10 hover:border-blue-500/50 rounded-full shadow-[0_0_60px_rgba(0,0,0,0.8)] hover:shadow-[0_0_80px_rgba(59,130,246,0.3)] transition-all duration-500 flex items-center gap-4 overflow-hidden focus:outline-none"
@@ -117,9 +133,9 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
             ) : (
               <motion.div
                 key="loginform"
-                initial={{ opacity: 0, scale: 0.9, y: 50, filter: 'blur(20px)' }}
-                animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, scale: 0.95, y: -30, filter: 'blur(20px)' }}
+                initial={{ opacity: 0, scale: 0.9, y: 50, filter: "blur(20px)" }}
+                animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.95, y: -30, filter: "blur(20px)" }}
                 transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.8 }}
                 className="w-full relative z-20 mt-4"
               >
@@ -130,8 +146,6 @@ function Landing({ user, onLogin, onSignup, onForgot, onGoogleAuth }) {
                     onClose={() => setShowInlineLogin(false)}
                     onLogin={onLogin}
                     onSignup={onSignup}
-                    onForgot={onForgot}
-                    onGoogleAuth={onGoogleAuth}
                   />
                 </div>
               </motion.div>
@@ -163,81 +177,106 @@ function App() {
     localStorage.setItem("cc-theme", theme);
   }, [theme]);
 
+  // Restore session from JWT in localStorage
   useEffect(() => {
-    if (!hasSupabaseConfig || !supabase) {
-      setIsAuthLoading(false);
-      return;
-    }
-
     let isActive = true;
 
-    const initializeSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (isActive) {
-        setCurrentUser(data.session?.user ?? null);
-        setIsAuthLoading(false);
+    const initAuth = async () => {
+      const token = localStorage.getItem("casecast-token");
+      if (!token) {
+        if (isActive) {
+          setCurrentUser(null);
+          setIsAuthLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const user = await res.json();
+          if (isActive) {
+            setCurrentUser(user);
+            localStorage.setItem("casecast-user", JSON.stringify(user));
+          }
+        } else {
+          localStorage.removeItem("casecast-token");
+          localStorage.removeItem("casecast-user");
+          if (isActive) setCurrentUser(null);
+        }
+      } catch {
+        const cachedUser = localStorage.getItem("casecast-user");
+        if (cachedUser && isActive) {
+          try {
+            setCurrentUser(JSON.parse(cachedUser));
+          } catch {
+            setCurrentUser(null);
+          }
+        }
+      } finally {
+        if (isActive) setIsAuthLoading(false);
       }
     };
 
-    initializeSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setCurrentUser(session?.user ?? null);
-      if (event === "PASSWORD_RECOVERY") {
-        navigate("/update-password");
-      }
-      setIsAuthLoading(false);
-    });
+    initAuth();
 
     return () => {
       isActive = false;
-      authListener.subscription.unsubscribe();
     };
   }, []);
 
   const handleSignup = async ({ email, password, username }) => {
-    if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username: username || "" } },
+    const res = await fetch(`${BASE_URL}/api/auth/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        full_name: username,
+        role: "Citizen",
+      }),
     });
-    if (error) throw error;
-    return { message: data.session ? "User created and signed in." : "User created. Check your email for verification." };
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.detail || "Signup failed.");
+    }
+
+    const data = await res.json();
+    localStorage.setItem("casecast-token", data.access_token);
+    localStorage.setItem("casecast-user", JSON.stringify(data.user));
+    setCurrentUser(data.user);
+    navigate("/app");
+    return { message: "Account created successfully." };
   };
 
   const handleLogin = async ({ email, password }) => {
-    if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
+    const res = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => null);
+      throw new Error(errJson?.detail || "Invalid email or password.");
+    }
+
+    const data = await res.json();
+    localStorage.setItem("casecast-token", data.access_token);
+    localStorage.setItem("casecast-user", JSON.stringify(data.user));
+    setCurrentUser(data.user);
     navigate("/app");
-    return { message: `Logged in as ${userData.user?.email || email}` };
-  };
-
-  const handleGoogleAuth = async () => {
-    if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/app` },
-    });
-    if (error) throw error;
-  };
-
-  const handleForgotPassword = async ({ email }) => {
-    if (!supabase) throw new Error(supabaseInitError || "Supabase is not configured.");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/update-password`,
-    });
-    if (error) throw error;
-    return { message: "Password reset email sent." };
+    return { message: `Logged in as ${data.user?.email || email}` };
   };
 
   const handleLogout = async () => {
-    if (!supabase) { navigate("/login"); return; }
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    localStorage.removeItem("casecast-token");
+    localStorage.removeItem("casecast-user");
+    setCurrentUser(null);
     navigate("/login");
   };
 
@@ -262,8 +301,6 @@ function App() {
               user={currentUser}
               onLogin={handleLogin}
               onSignup={handleSignup}
-              onForgot={handleForgotPassword}
-              onGoogleAuth={handleGoogleAuth}
             />
           }
         />
@@ -274,22 +311,26 @@ function App() {
               user={currentUser}
               onLogin={handleLogin}
               onSignup={handleSignup}
-              onForgot={handleForgotPassword}
-              onGoogleAuth={handleGoogleAuth}
             />
           }
         />
         <Route
           path="/app"
           element={
-            currentUser || !hasSupabaseConfig ? (
-              <MainPortal user={currentUser} onLogout={handleLogout} theme={theme} setTheme={setTheme} />
+            currentUser ? (
+              <MainPortal
+                user={currentUser}
+                setUser={setCurrentUser}
+                onLogout={handleLogout}
+                theme={theme}
+                setTheme={setTheme}
+              />
             ) : (
-              <Navigate to="/login" replace />
+              <Navigate to="/login?msg=auth_required" replace />
             )
           }
         />
-        <Route path="/update-password" element={<UpdatePassword />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );

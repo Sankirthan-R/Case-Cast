@@ -1,16 +1,15 @@
 import { AnimatePresence } from "framer-motion";
 import { useMemo, useState } from "react";
-import { supabase } from "../supabaseClient";
 import { runPrediction } from "../api/predict";
 import { usePredictionHistory } from "../hooks/usePredictionHistory";
-import { getFallbackPrediction, initialCastingInputs, parseNumericInput } from "../utils/prediction";
+import { initialCastingInputs, parseNumericInput } from "../utils/prediction";
 import AppShell from "../components/AppShell";
 import HomePage from "./portal/HomePage";
 import PredictPage from "./portal/PredictPage";
 import LogsPage from "./portal/LogsPage";
 import ProfilePage from "./portal/ProfilePage";
 
-export default function MainPortal({ user, onLogout, theme, setTheme }) {
+export default function MainPortal({ user, setUser, onLogout, theme, setTheme }) {
   const [activeTab, setActiveTab] = useState("home");
   const [castingInputs, setCastingInputs] = useState(initialCastingInputs);
   const [result, setResult] = useState(null);
@@ -18,7 +17,7 @@ export default function MainPortal({ user, onLogout, theme, setTheme }) {
   const [isPredicting, setIsPredicting] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const { historyItems, setHistoryItems, refreshHistory } = usePredictionHistory(user);
+  const { historyItems, refreshHistory } = usePredictionHistory(user);
 
   const stats = useMemo(() => {
     const casts = historyItems.length;
@@ -35,31 +34,33 @@ export default function MainPortal({ user, onLogout, theme, setTheme }) {
 
   const handlePredict = async (event) => {
     event.preventDefault();
+    const rawSex = castingInputs.sex ? castingInputs.sex.trim().toUpperCase() : "";
+    const sex = rawSex.startsWith("M") ? "M" : rawSex.startsWith("F") ? "F" : "";
+
     const parsed = {
-      age: parseNumericInput(castingInputs.age),
-      sex: castingInputs.sex ? castingInputs.sex.trim().toUpperCase() : "",
-      priorOffenses: parseNumericInput(castingInputs.priorOffenses),
-      juvenileFelonyCount: parseNumericInput(castingInputs.juvenileFelonyCount),
-      juvenileMisdemeanorCount: parseNumericInput(castingInputs.juvenileMisdemeanorCount),
-      juvenileOtherCount: parseNumericInput(castingInputs.juvenileOtherCount),
-      daysBetweenArrestAndScreening: parseNumericInput(castingInputs.daysBetweenArrestAndScreening),
-      daysFromOffenseToScreen: parseNumericInput(castingInputs.daysFromOffenseToScreen),
-      jailDurationDays: parseNumericInput(castingInputs.jailDurationDays),
+      age: Math.round(Number(parseNumericInput(castingInputs.age))),
+      sex: sex,
+      priorOffenses: Math.round(Number(parseNumericInput(castingInputs.priorOffenses))),
+      juvenileFelonyCount: Math.round(Number(parseNumericInput(castingInputs.juvenileFelonyCount) || 0)),
+      juvenileMisdemeanorCount: Math.round(Number(parseNumericInput(castingInputs.juvenileMisdemeanorCount) || 0)),
+      juvenileOtherCount: Math.round(Number(parseNumericInput(castingInputs.juvenileOtherCount) || 0)),
+      daysBetweenArrestAndScreening: Math.round(Number(parseNumericInput(castingInputs.daysBetweenArrestAndScreening))),
+      daysFromOffenseToScreen: Math.round(Number(parseNumericInput(castingInputs.daysFromOffenseToScreen))),
+      jailDurationDays: Math.round(Number(parseNumericInput(castingInputs.jailDurationDays))),
     };
 
     const missingKeys = Object.entries(parsed)
-      .filter(([key, value]) => key !== "sex" && value === null)
+      .filter(([key, value]) => key !== "sex" && (value === null || isNaN(value)))
       .map(([key]) => key);
     if (!parsed.sex) missingKeys.push("sex");
 
     if (missingKeys.length > 0) {
-      setFormError(`Please fill all required inputs. Missing: ${missingKeys.join(", ")}`);
+      setFormError(`Please fill all required inputs. Missing or invalid: ${missingKeys.join(", ")}`);
       return;
     }
 
-    // ── Logical Validations ──────────────────────────────────────────
-    if (parsed.age > 90) {
-      setFormError("Age cannot exceed 90 years.");
+    if (parsed.age < 18 || parsed.age > 100) {
+      setFormError("Age must be between 18 and 100 years.");
       return;
     }
 
@@ -80,57 +81,24 @@ export default function MainPortal({ user, onLogout, theme, setTheme }) {
       return;
     }
 
-    if (parsed.daysBetweenArrestAndScreening < -10000 || parsed.daysBetweenArrestAndScreening > 15000) {
-      setFormError("Arrest to screening days must be between -10000 and 15000.");
-      return;
-    }
-
-    if (parsed.daysFromOffenseToScreen < -10000 || parsed.daysFromOffenseToScreen > 15000) {
-      setFormError("Days from offense to screening must be between -10000 and 15000.");
-      return;
-    }
-
     setIsPredicting(true);
     setFormError("");
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      if (!token) throw new Error("No active session token.");
-
+      const token = localStorage.getItem("casecast-token");
+      if (!token) {
+        onLogout();
+        return;
+      }
       const prediction = await runPrediction(token, parsed);
       setResult(prediction);
       await refreshHistory();
     } catch (err) {
-      console.error("Prediction fell back to client simulation:", err);
-      const fallbackPred = getFallbackPrediction(parsed);
-      const entry = {
-        id: `${Date.now()}-${Math.random()}`,
-        ...parsed,
-        ...fallbackPred.summary,
-        source: fallbackPred.source,
-        createdAt: new Date().toISOString(),
-      };
-
-      if (supabase && user?.id) {
-        try {
-          const { error: dbError } = await supabase.from("prediction_history").insert([{
-            user_id: user.id,
-            input_payload: parsed,
-            output_payload: fallbackPred,
-            metadata: { model_used: "fallback_simulation" },
-            source: fallbackPred.source,
-            outcome: fallbackPred.summary.outcome,
-            confidence: fallbackPred.summary.confidence,
-          }]);
-          if (dbError) setFormError(`DB Error: ${dbError.message}`);
-        } catch (e) {
-          console.error("Fallback DB save failed:", e);
-        }
+      if (err.message && err.message.includes("401")) {
+        onLogout();
+        return;
       }
-
-      setResult(fallbackPred);
-      setHistoryItems((prev) => [entry, ...prev].slice(0, 50));
+      setFormError(err.message || "Prediction failed.");
     } finally {
       setIsPredicting(false);
     }
@@ -168,7 +136,7 @@ export default function MainPortal({ user, onLogout, theme, setTheme }) {
           <LogsPage key="history" historyItems={historyItems} onRefresh={refreshHistory} />
         )}
         {activeTab === "profile" && (
-          <ProfilePage key="profile" user={user} onLogout={onLogout} />
+          <ProfilePage key="profile" user={user} setUser={setUser} onLogout={onLogout} />
         )}
       </AnimatePresence>
     </AppShell>

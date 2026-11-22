@@ -1,49 +1,47 @@
-from __future__ import annotations
-
-import os
 from dataclasses import dataclass
 from pathlib import Path
-
+import os
 from dotenv import load_dotenv
-
 
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 
+def _resolve_artifact_path() -> Path:
+    env_val = os.getenv("ARTIFACT_PATH")
+    if not env_val:
+        return (BASE_DIR / "artifacts" / "compas_model_bundle.joblib").resolve()
+    p = Path(env_val)
+    if not p.is_absolute():
+        p = (BASE_DIR / p).resolve()
+    if p.is_dir():
+        return (p / "compas_model_bundle.joblib").resolve()
+    return p
+
+
+def _resolve_csv_path() -> Path:
+    env_val = os.getenv("COMPAS_CSV_PATH")
+    if not env_val:
+        return (BASE_DIR / "compas-scores-two-years.csv").resolve()
+    p = Path(env_val)
+    if not p.is_absolute():
+        p = (BASE_DIR / p).resolve()
+    return p
+
+
 @dataclass(frozen=True)
 class Settings:
-    supabase_url: str
-    supabase_anon_key: str
-    supabase_service_role_key: str
-    compas_csv_path: Path
-    artifact_path: Path
-    history_table: str
-    slow_query_ms: int
+    db_host: str = os.getenv("DB_HOST", "127.0.0.1")
+    db_port: int = int(os.getenv("DB_PORT", "3306"))
+    db_name: str = os.getenv("DB_NAME", "casecast")
+    db_user: str = os.getenv("DB_USER", "casecast_app")
+    db_password: str = os.getenv("DB_PASSWORD", "")
+    jwt_secret: str = os.getenv("JWT_SECRET", "casecast-insecure-secret-key-change-in-prod")
+    jwt_expire_hours: int = int(os.getenv("JWT_EXPIRE_HOURS", "12"))
+    compas_csv_path: Path = _resolve_csv_path()
+    artifact_path: Path = _resolve_artifact_path()
+    slow_query_ms: int = int(os.getenv("SLOW_QUERY_MS", "250"))
 
 
-
-def _required_env(name: str) -> str:
-    value = os.getenv(name, "").strip()
-    if not value:
-        raise RuntimeError(f"Missing required environment variable: {name}")
-    return value
-
-
-
-def load_settings() -> Settings:
-    csv_default = BASE_DIR / "compas-scores-two-years.csv"
-    artifact_default = BASE_DIR / "artifacts" / "compas_model_bundle.joblib"
-
-    compas_csv_path = Path(os.getenv("COMPAS_CSV_PATH", str(csv_default))).expanduser().resolve()
-    artifact_path = Path(os.getenv("ARTIFACT_PATH", str(artifact_default))).expanduser().resolve()
-
-    return Settings(
-        supabase_url=_required_env("SUPABASE_URL"),
-        supabase_anon_key=_required_env("SUPABASE_ANON_KEY"),
-        supabase_service_role_key=_required_env("SUPABASE_SERVICE_ROLE_KEY"),
-        compas_csv_path=compas_csv_path,
-        artifact_path=artifact_path,
-        history_table=os.getenv("HISTORY_TABLE", "prediction_history").strip() or "prediction_history",
-        slow_query_ms=int(os.getenv("SLOW_QUERY_MS", "250")),
-    )
+def get_settings() -> Settings:
+    return Settings()

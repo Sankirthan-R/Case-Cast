@@ -24,9 +24,9 @@ export default function AppShell({
   setTheme,
   children,
 }) {
-  const authProvider = (user?.app_metadata?.provider || "email").toUpperCase();
+  const authProvider = "AUTH";
   const signedInEmail = user?.email || "Authenticated User";
-  const username = user?.user_metadata?.username || signedInEmail?.split("@")[0] || "User";
+  const username = user?.full_name || signedInEmail?.split("@")[0] || "User";
 
   return (
     <div className="min-h-screen bg-black flex flex-col font-sans overflow-hidden">
