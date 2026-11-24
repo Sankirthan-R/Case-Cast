@@ -75,3 +75,12 @@ class HistoryRecord(BaseModel):
     outcome: str
     confidence: float
     created_at: datetime
+
+
+class SessionItem(BaseModel):
+    session_id: str
+    issued_at: str
+    revoked_at: Optional[str] = None
+    user_agent: Optional[str] = None
+    is_current: bool
+    is_active: bool

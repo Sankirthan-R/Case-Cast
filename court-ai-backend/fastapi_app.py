@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import time
 import traceback
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
@@ -27,6 +28,7 @@ from schemas import (
     PredictInput,
     ProfileUpdate,
     RoleEnum,
+    SessionItem,
     SignupRequest,
 )
 from settings import Settings, get_settings
@@ -69,7 +71,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="CaseCast Core AI Service",
     lifespan=lifespan,
-    description="Explainable legal AI risk assessment service backed by MySQL 8.4 and JWT auth.",
+    description="Explainable legal AI risk assessment service backed by MySQL 8.4 and JWT auth with session management.",
 )
 
 app.add_middleware(
@@ -86,8 +88,37 @@ def get_current_user(token: str = Depends(get_bearer_token)) -> Dict[str, Any]:
     if not state:
         raise HTTPException(status_code=500, detail="Application state not initialized")
     claims = decode_access_token(token, state.settings.jwt_secret)
+    session_id = claims.get("jti")
+    if not session_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing session identifier (jti)",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     user_id = int(claims.get("user_id") or claims.get("sub"))
-    return {"id": user_id, "email": claims.get("email")}
+
+    with state.engine.connect() as conn:
+        sess = conn.execute(
+            text("""
+                SELECT session_id, user_id, revoked_at
+                FROM user_sessions
+                WHERE session_id = :sid
+            """),
+            {"sid": session_id},
+        ).fetchone()
+
+    if not sess or sess.user_id != user_id or sess.revoked_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session has been revoked or is invalid",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return {
+        "id": user_id,
+        "email": claims.get("email"),
+        "session_id": session_id,
+    }
 
 
 @app.get("/api/health")
@@ -104,7 +135,7 @@ async def health_check():
 
 
 @app.post("/api/auth/signup", status_code=status.HTTP_201_CREATED)
-async def signup(payload: SignupRequest):
+async def signup(payload: SignupRequest, request: Request):
     global state
     if not state:
         raise HTTPException(status_code=500, detail="State not ready")
@@ -123,6 +154,8 @@ async def signup(payload: SignupRequest):
     full_name = (payload.full_name or payload.username or payload.email.split("@")[0]).strip()
     role_val = payload.role.value if isinstance(payload.role, RoleEnum) else str(payload.role)
     pwd_hash = hash_password(payload.password)
+    user_agent = (request.headers.get("user-agent") or "unknown")[:255]
+    session_id = str(uuid.uuid4())
 
     with state.engine.begin() as conn:
         res = conn.execute(
@@ -139,10 +172,23 @@ async def signup(payload: SignupRequest):
         )
         user_id = res.lastrowid
 
+        conn.execute(
+            text("""
+                INSERT INTO user_sessions (session_id, user_id, user_agent)
+                VALUES (:session_id, :user_id, :user_agent)
+            """),
+            {
+                "session_id": session_id,
+                "user_id": user_id,
+                "user_agent": user_agent,
+            },
+        )
+
     token = create_access_token(
         user_id=user_id,
         email=payload.email.lower().strip(),
         secret=state.settings.jwt_secret,
+        session_id=session_id,
         expire_hours=state.settings.jwt_expire_hours,
     )
 
@@ -163,7 +209,7 @@ async def signup(payload: SignupRequest):
 
 
 @app.post("/api/auth/login")
-async def login(payload: LoginRequest):
+async def login(payload: LoginRequest, request: Request):
     global state
     if not state:
         raise HTTPException(status_code=500, detail="State not ready")
@@ -183,10 +229,27 @@ async def login(payload: LoginRequest):
             detail="Invalid email or password",
         )
 
+    user_agent = (request.headers.get("user-agent") or "unknown")[:255]
+    session_id = str(uuid.uuid4())
+
+    with state.engine.begin() as conn:
+        conn.execute(
+            text("""
+                INSERT INTO user_sessions (session_id, user_id, user_agent)
+                VALUES (:session_id, :user_id, :user_agent)
+            """),
+            {
+                "session_id": session_id,
+                "user_id": user.user_id,
+                "user_agent": user_agent,
+            },
+        )
+
     token = create_access_token(
         user_id=user.user_id,
         email=user.email,
         secret=state.settings.jwt_secret,
+        session_id=session_id,
         expire_hours=state.settings.jwt_expire_hours,
     )
 
@@ -206,6 +269,84 @@ async def login(payload: LoginRequest):
             "created_at": created_at_val,
         },
     }
+
+
+@app.post("/api/auth/logout")
+async def logout(current_user: Dict[str, Any] = Depends(get_current_user)):
+    global state
+    with state.engine.begin() as conn:
+        conn.execute(
+            text("""
+                UPDATE user_sessions
+                SET revoked_at = CURRENT_TIMESTAMP
+                WHERE session_id = :sid AND user_id = :uid AND revoked_at IS NULL
+            """),
+            {"sid": current_user["session_id"], "uid": current_user["id"]},
+        )
+    return {"detail": "Logged out successfully"}
+
+
+@app.get("/api/auth/sessions", response_model=List[SessionItem])
+async def list_sessions(current_user: Dict[str, Any] = Depends(get_current_user)):
+    global state
+    with state.engine.connect() as conn:
+        rows = conn.execute(
+            text("""
+                SELECT session_id, issued_at, revoked_at, user_agent
+                FROM user_sessions
+                WHERE user_id = :uid
+                ORDER BY issued_at DESC
+            """),
+            {"uid": current_user["id"]},
+        ).fetchall()
+
+    curr_sid = current_user["session_id"]
+    sessions = []
+    for r in rows:
+        issued_str = r.issued_at.isoformat() if isinstance(r.issued_at, datetime) else str(r.issued_at)
+        revoked_str = (
+            r.revoked_at.isoformat()
+            if isinstance(r.revoked_at, datetime)
+            else (str(r.revoked_at) if r.revoked_at else None)
+        )
+        is_curr = (r.session_id == curr_sid)
+        is_act = (r.revoked_at is None)
+        sessions.append({
+            "session_id": r.session_id,
+            "issued_at": issued_str,
+            "revoked_at": revoked_str,
+            "user_agent": r.user_agent,
+            "is_current": is_curr,
+            "is_active": is_act,
+        })
+    return sessions
+
+
+@app.delete("/api/auth/sessions/{session_id}")
+async def revoke_session(
+    session_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    global state
+    with state.engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT session_id, user_id, revoked_at FROM user_sessions WHERE session_id = :sid"),
+            {"sid": session_id},
+        ).fetchone()
+
+    if not row or row.user_id != current_user["id"]:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    with state.engine.begin() as conn:
+        conn.execute(
+            text("""
+                UPDATE user_sessions
+                SET revoked_at = CURRENT_TIMESTAMP
+                WHERE session_id = :sid AND user_id = :uid AND revoked_at IS NULL
+            """),
+            {"sid": session_id, "uid": current_user["id"]},
+        )
+    return {"detail": "Session revoked successfully"}
 
 
 @app.get("/api/users/me")
@@ -293,6 +434,17 @@ async def change_password(
         conn.execute(
             text("UPDATE users SET password_hash = :hash WHERE user_id = :uid"),
             {"hash": new_hash, "uid": current_user["id"]},
+        )
+        # Revoke all other sessions belonging to this user (keep current session)
+        conn.execute(
+            text("""
+                UPDATE user_sessions
+                SET revoked_at = CURRENT_TIMESTAMP
+                WHERE user_id = :uid
+                  AND session_id != :current_sid
+                  AND revoked_at IS NULL
+            """),
+            {"uid": current_user["id"], "current_sid": current_user["session_id"]},
         )
     return {"detail": "Password updated successfully"}
 

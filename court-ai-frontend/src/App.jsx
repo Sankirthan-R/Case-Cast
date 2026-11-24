@@ -274,6 +274,17 @@ function App() {
   };
 
   const handleLogout = async () => {
+    const token = localStorage.getItem("casecast-token");
+    if (token) {
+      try {
+        await fetch(`${BASE_URL}/api/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch (err) {
+        console.error("Logout request failed:", err);
+      }
+    }
     localStorage.removeItem("casecast-token");
     localStorage.removeItem("casecast-user");
     setCurrentUser(null);

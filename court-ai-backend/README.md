@@ -13,6 +13,7 @@ FastAPI-powered judicial intelligence service providing risk assessments across 
 ## Database Schema
 
 - `users`: ID, full_name, email, password_hash, role (Citizen, Lawyer, Judge, Researcher), phone, address, created_at
+- `user_sessions`: session_id (CHAR(36) PK, JWT jti claim), user_id (FK ON DELETE CASCADE), issued_at, revoked_at, user_agent
 - `cases`: case_id, user_id, age, sex, priors_count, jail_days, juvenile offenses, screening delays, created_at
 - `predictions`: case_id, task (conviction, severity, recidivism), probability, predicted_label, latency_ms (PK: `case_id` + `task`)
 - `audit_logs`: log_id, user_id, action, details, logged_at
@@ -53,12 +54,15 @@ uvicorn fastapi_app:app --port 8000 --reload
 ### Authentication
 - `POST /api/auth/signup` - Register user (`email`, `password`, `full_name`, `role`) -> returns Bearer JWT + profile
 - `POST /api/auth/login` - Authenticate (`email`, `password`) -> returns Bearer JWT + profile
+- `POST /api/auth/logout` - Revoke current user session
+- `GET /api/auth/sessions` - List user sessions (`session_id`, `issued_at`, `revoked_at`, `user_agent`, `is_current`, `is_active`)
+- `DELETE /api/auth/sessions/{session_id}` - Revoke a specific user session
 
 ### User Profile
 - `GET /api/users/me` - Current user profile
 - `PUT /api/users/me` - Update profile (`full_name`, `role`, `phone`, `address`)
 - `DELETE /api/users/me` - Delete account
-- `PUT /api/users/me/password` - Change password (`current_password`, `new_password`)
+- `PUT /api/users/me/password` - Change password (`current_password`, `new_password`) and revoke all other sessions
 
 ### Predictions & History
 - `POST /api/predict` - Run 3-task ML inference; auto-saves case & predictions in one transaction if authenticated

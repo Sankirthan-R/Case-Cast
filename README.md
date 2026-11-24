@@ -101,10 +101,13 @@ If you ran `python scripts/seed.py`:
 
 - `POST /api/auth/signup` - Register with email, password, full_name, role
 - `POST /api/auth/login` - Authenticate and receive JWT Bearer token
+- `POST /api/auth/logout` - Revoke current user session
+- `GET /api/auth/sessions` - List active and historical user sessions
+- `DELETE /api/auth/sessions/{session_id}` - Revoke a specific user session
 - `GET /api/users/me` - Current authenticated user profile
 - `PUT /api/users/me` - Update profile information
 - `DELETE /api/users/me` - Remove account
-- `PUT /api/users/me/password` - Update account password
+- `PUT /api/users/me/password` - Update password and revoke all other user sessions
 - `POST /api/predict` - Run 3-task ML inference; logs case & predictions transactionally
 - `GET /api/history` - Paginated prediction history
 - `GET /api/history/{case_id}` - Case details with full prediction records

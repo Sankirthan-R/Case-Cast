@@ -47,3 +47,14 @@ CREATE TABLE audit_logs (
   logged_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_log_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
+
+CREATE TABLE user_sessions (
+  session_id CHAR(36) PRIMARY KEY,            
+  user_id    INT NOT NULL,
+  issued_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  revoked_at TIMESTAMP NULL,
+  user_agent VARCHAR(255),
+  CONSTRAINT fk_sess_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  INDEX idx_sess_user (user_id, issued_at)
+) ENGINE=InnoDB;
+

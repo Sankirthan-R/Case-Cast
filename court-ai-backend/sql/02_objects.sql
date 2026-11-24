@@ -19,3 +19,20 @@ BEGIN
   WHERE c.user_id = p_user;
 END//
 DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER trg_session_login AFTER INSERT ON user_sessions FOR EACH ROW
+BEGIN
+  INSERT INTO audit_logs(user_id, action, details)
+  VALUES (NEW.user_id, 'LOGIN', CONCAT('session ', NEW.session_id));
+END//
+
+CREATE TRIGGER trg_session_logout AFTER UPDATE ON user_sessions FOR EACH ROW
+BEGIN
+  IF OLD.revoked_at IS NULL AND NEW.revoked_at IS NOT NULL THEN
+    INSERT INTO audit_logs(user_id, action, details)
+    VALUES (NEW.user_id, 'LOGOUT', CONCAT('session ', NEW.session_id));
+  END IF;
+END//
+DELIMITER ;
+

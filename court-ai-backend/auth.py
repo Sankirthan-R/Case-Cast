@@ -21,12 +21,19 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(user_id: int, email: str, secret: str, expire_hours: int = 12) -> str:
+def create_access_token(
+    user_id: int,
+    email: str,
+    secret: str,
+    session_id: str,
+    expire_hours: int = 12,
+) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
         "user_id": user_id,
         "email": email,
+        "jti": session_id,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(hours=expire_hours)).timestamp()),
     }

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
-import { KeyRound, LogOut, Pencil, Save, UserRound, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Globe, KeyRound, LogOut, Pencil, RefreshCw, Save, Trash2, UserRound, X } from "lucide-react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -32,6 +32,61 @@ export default function ProfilePage({ user, setUser, onLogout }) {
   });
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [sessions, setSessions] = useState([]);
+  const [isSessionsLoading, setIsSessionsLoading] = useState(false);
+  const [sessionActionMsg, setSessionActionMsg] = useState("");
+
+  const fetchSessions = useCallback(async () => {
+    const token = localStorage.getItem("casecast-token");
+    if (!token) return;
+    try {
+      setIsSessionsLoading(true);
+      const res = await fetch(`${BASE_URL}/api/auth/sessions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        onLogout();
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch sessions:", err);
+    } finally {
+      setIsSessionsLoading(false);
+    }
+  }, [onLogout]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  const revokeSession = async (sessionId) => {
+    const token = localStorage.getItem("casecast-token");
+    if (!token) return;
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/sessions/${sessionId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        onLogout();
+        return;
+      }
+      if (res.ok) {
+        setSessionActionMsg("Session revoked successfully.");
+        await fetchSessions();
+      } else {
+        const err = await res.json().catch(() => null);
+        setSessionActionMsg(err?.detail || "Failed to revoke session.");
+      }
+    } catch (err) {
+      console.error("Failed to revoke session:", err);
+      setSessionActionMsg("Network error revoking session.");
+    }
+  };
 
   useEffect(() => {
     const updated = {
@@ -160,13 +215,18 @@ export default function ProfilePage({ user, setUser, onLogout }) {
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          onLogout();
+          return;
+        }
         const errJson = await res.json().catch(() => null);
         throw new Error(errJson?.detail || "Current password is incorrect.");
       }
 
       setPasswordDraft({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setShowPasswordFields(false);
-      setSaveMessage("Password updated successfully.");
+      setSaveMessage("Password updated successfully. Other sessions revoked.");
+      await fetchSessions();
     } catch (err) {
       console.error("Failed to update password:", err);
       setSaveMessage(err?.message || "Unable to update password right now.");
@@ -368,6 +428,107 @@ export default function ProfilePage({ user, setUser, onLogout }) {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Active Sessions */}
+      <div className="glass-panel p-8 rounded-3xl flex flex-col gap-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="font-display font-bold text-xl text-white">Active Sessions</h3>
+            <p className="text-xs text-slate-400 mt-1">Manage active logins and connected devices</p>
+          </div>
+          <button
+            type="button"
+            onClick={fetchSessions}
+            disabled={isSessionsLoading}
+            className="btn-secondary flex items-center gap-2 text-xs py-1.5 px-3"
+            title="Refresh sessions"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSessionsLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
+
+        {sessionActionMsg && (
+          <p className="text-xs text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 rounded-lg p-2.5">
+            {sessionActionMsg}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-3">
+          {sessions.length === 0 ? (
+            <p className="text-xs text-slate-400 py-2">
+              {isSessionsLoading ? "Loading active sessions..." : "No active sessions found."}
+            </p>
+          ) : (
+            sessions.map((sess) => {
+              const isCurrent = sess.is_current;
+              const isActive = sess.is_active;
+              const formattedDate = sess.issued_at
+                ? new Date(sess.issued_at).toLocaleString()
+                : "Unknown";
+
+              return (
+                <div
+                  key={sess.session_id}
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border ${
+                    isCurrent
+                      ? "bg-cyan-950/20 border-cyan-500/30"
+                      : isActive
+                      ? "bg-white/[0.02] border-white/10"
+                      : "bg-black/20 border-white/5 opacity-60"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`p-2 rounded-lg mt-0.5 ${
+                        isCurrent
+                          ? "bg-cyan-500/10 text-cyan-400"
+                          : isActive
+                          ? "bg-indigo-500/10 text-indigo-400"
+                          : "bg-slate-800 text-slate-400"
+                      }`}
+                    >
+                      <Globe className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-slate-200 truncate max-w-xs sm:max-w-md">
+                          {sess.user_agent || "Unknown Browser / Client"}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                            Current
+                          </span>
+                        )}
+                        {!isActive && (
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            Revoked
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-400 mt-0.5">
+                        Issued: {formattedDate}
+                        {sess.revoked_at ? ` · Revoked: ${new Date(sess.revoked_at).toLocaleString()}` : ""}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isActive && !isCurrent && (
+                    <button
+                      type="button"
+                      onClick={() => revokeSession(sess.session_id)}
+                      className="btn-secondary text-xs text-rose-400 hover:text-rose-300 border-rose-900/40 hover:bg-rose-900/30 py-1.5 px-3 self-end sm:self-center flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Revoke
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </motion.div>
   );
